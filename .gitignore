@@ -1,0 +1,10 @@
+.next/
+node_modules/
+.npm-cache/
+.kayra-git/
+out/
+dist/
+*.log
+tsconfig.tsbuildinfo
+.env
+.env*.local

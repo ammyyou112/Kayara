@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: "Cormorant Garamond", "Bodoni 72", Georgia, serif;
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --kayra-cream: #f5efe4;
+  --kayra-ivory: #fffaf0;
+  --kayra-plaster: #ddd0be;
+  --kayra-sand: #bda889;
+  --kayra-clay: #a25d43;
+  --kayra-walnut: #3b241c;
+  --kayra-gold: #b69355;
+  --jewel-black: #0d0b09;
+  --jewel-charcoal: #1b1714;
+  --jewel-umber: #35251d;
+  --jewel-champagne: #d8be82;
+  --jewel-pearl: #f3ead8;
+  --background: var(--kayra-cream);
+  --foreground: var(--kayra-walnut);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(182, 147, 85, 0.14), transparent 28rem),
+    linear-gradient(135deg, #fff7ea 0%, #eadcc7 44%, #c7a37e 100%);
+  font-family: var(--font-sans);
+  text-rendering: geometricPrecision;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  background: var(--kayra-walnut);
+  color: var(--kayra-ivory);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.kayra-mark path {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kayra-clothing-visual,
+.kayra-jewelry-visual {
+  height: calc(100% + 48px);
+  width: calc(100% + 48px);
+  left: -24px;
+  top: -24px;
+  position: absolute;
+  will-change: transform;
+}
+
+.kayra-clothing-visual {
+  background:
+    linear-gradient(105deg, rgba(255, 250, 240, 0.78), rgba(255, 250, 240, 0.16) 48%, rgba(80, 46, 28, 0.28)),
+    radial-gradient(ellipse at 70% 19%, rgba(255, 248, 234, 0.78) 0 13%, transparent 14%),
+    radial-gradient(ellipse at 72% 35%, rgba(214, 176, 136, 0.72) 0 20%, transparent 21%),
+    radial-gradient(ellipse at 75% 74%, rgba(84, 48, 35, 0.46) 0 16%, transparent 17%),
+    conic-gradient(from 205deg at 70% 46%, rgba(255, 255, 255, 0.42), rgba(171, 112, 76, 0.55), rgba(249, 226, 195, 0.35), rgba(73, 39, 26, 0.42), rgba(255, 255, 255, 0.42)),
+    linear-gradient(135deg, #fbf4e7 0%, #e7d1b5 45%, #9f6148 100%);
+}
+
+.kayra-clothing-visual::before {
+  background:
+    linear-gradient(90deg, transparent 0 13%, rgba(255, 250, 240, 0.5) 13.2% 13.8%, transparent 14% 34%, rgba(59, 36, 28, 0.12) 34.2% 34.6%, transparent 35%),
+    repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 24px);
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 46% 100%, 66% 47%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.kayra-jewelry-visual {
+  background:
+    radial-gradient(circle at 62% 42%, rgba(216, 190, 130, 0.82) 0 3.5%, transparent 4%),
+    radial-gradient(circle at 67% 50%, rgba(255, 247, 219, 0.36) 0 1.5%, transparent 2%),
+    radial-gradient(circle at 56% 57%, rgba(216, 190, 130, 0.38) 0 2%, transparent 2.5%),
+    radial-gradient(ellipse at 65% 46%, rgba(216, 190, 130, 0.34), transparent 18rem),
+    radial-gradient(ellipse at 48% 42%, rgba(72, 42, 29, 0.72), transparent 24rem),
+    linear-gradient(135deg, #090706 0%, #1b1714 42%, #3a261c 100%);
+}
+
+.kayra-jewelry-visual::before {
+  background:
+    linear-gradient(115deg, transparent 0 44%, rgba(216, 190, 130, 0.24) 44.3% 44.7%, transparent 45%),
+    radial-gradient(circle at 62% 42%, rgba(255, 250, 229, 0.82), transparent 1.9rem);
+  content: "";
+  inset: 0;
+  mix-blend-mode: screen;
+  position: absolute;
+}
+
+.magnetic-focus:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
