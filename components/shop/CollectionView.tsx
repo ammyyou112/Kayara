@@ -27,9 +27,9 @@ export async function CollectionView({
 
   return (
     <div className={`min-h-screen ${t.page}`}>
-      <SiteNav tone={world === "jewelry" ? "dark" : "light"} />
+      <SiteNav tone="light" />
 
-      <section className="relative flex h-[58vh] min-h-96 items-end overflow-hidden">
+      <section className="relative flex h-[50vh] min-h-80 items-end overflow-hidden md:h-[58vh] md:min-h-96">
         <Media
           alt={collection.heroImage.altText}
           priority
@@ -63,7 +63,7 @@ export async function CollectionView({
       <main className="px-5 pb-24 md:px-12">
         <section className="pt-16">
           {products.length > 0 ? (
-            <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

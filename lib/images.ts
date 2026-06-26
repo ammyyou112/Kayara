@@ -69,8 +69,49 @@ export const jewel = {
   detail: unsplash("1605100804763-247f67b3557e", 1400)
 };
 
-// Entry gate panel imagery
-export const gate = {
-  clothing: unsplash("1490481651871-ab68de25d43d", 1600),
-  jewelry: unsplash("1611591437281-460bfbe1220a", 1600)
+// Full-bleed homepage hero campaign slides
+export type StoreSlide = {
+  id: string;
+  image: string;
+  href: string;
+  alt: string;
 };
+
+export const storeHeroSlides: StoreSlide[] = [
+  {
+    id: "pret",
+    image: unsplash("1490481651871-ab68de25d43d", 2200),
+    href: "/clothing/collections/luxe-pret",
+    alt: "Luxe Pret campaign"
+  },
+  {
+    id: "bridal",
+    image: unsplash("1591369822096-ffd140ec948f", 2200),
+    href: "/clothing/collections/bridal",
+    alt: "Bridal campaign"
+  },
+  {
+    id: "heirloom",
+    image: unsplash("1602173574767-37ac01994b2a", 2200),
+    href: "/jewelry/collections/heirloom",
+    alt: "Heirloom jewelry campaign"
+  },
+  {
+    id: "editorial",
+    image: unsplash("1539109136881-3be0616acf4b", 2200),
+    href: "/clothing",
+    alt: "Clothing editorial"
+  },
+  {
+    id: "jewel",
+    image: unsplash("1611591437281-460bfbe1220a", 2200),
+    href: "/jewelry",
+    alt: "Jewelry editorial"
+  },
+  {
+    id: "season",
+    image: unsplash("1502716119720-b23a93e5fe1b", 2200),
+    href: "/shop",
+    alt: "New season"
+  }
+];

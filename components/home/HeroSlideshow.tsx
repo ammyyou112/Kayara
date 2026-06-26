@@ -35,7 +35,7 @@ export function HeroSlideshow({
   }, [index, reduced, go]);
 
   return (
-    <section className="relative h-[88vh] min-h-[34rem] w-full overflow-hidden bg-[var(--jewel-black)] text-[var(--kayra-ivory)]">
+    <section className="relative h-[72vh] min-h-[28rem] w-full overflow-hidden bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)] md:h-[88vh] md:min-h-[34rem]">
       {slides.map((slide, i) => {
         const active = i === index;
         return (

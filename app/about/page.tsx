@@ -33,7 +33,7 @@ export default function AboutPage() {
       <SiteNav tone="light" />
 
       {/* Hero */}
-      <section className="relative flex h-[70vh] min-h-[28rem] items-end overflow-hidden">
+      <section className="relative flex h-[58vh] min-h-[24rem] items-end overflow-hidden md:h-[70vh] md:min-h-[28rem]">
         <Media
           alt="The KAYRA house"
           priority
@@ -55,7 +55,7 @@ export default function AboutPage() {
       </section>
 
       {/* Story */}
-      <section className="mx-auto max-w-3xl px-6 py-20 text-center md:py-28">
+      <section className="mx-auto max-w-3xl px-6 py-16 text-center md:py-28">
         <p className="text-base uppercase leading-9 tracking-[0.18em] text-[var(--kayra-walnut)]/80 md:text-lg">
           KAYRA was founded to dress the warm, formal occasions of South Asian
           life — the wedding guest, the bride, the heirloom passed between hands.
@@ -82,14 +82,14 @@ export default function AboutPage() {
 
       {/* Atelier split */}
       <section className="grid lg:grid-cols-2">
-        <div className="relative min-h-[60vh]">
+        <div className="relative min-h-[44vh] md:min-h-[60vh]">
           <Media
             alt="Inside the atelier"
             sizes="(max-width: 1024px) 100vw, 50vw"
             src={editorial.atelier}
           />
         </div>
-        <div className="flex items-center bg-[var(--kayra-walnut)] px-8 py-20 text-[var(--kayra-ivory)] md:px-16">
+        <div className="flex items-center bg-[var(--kayra-walnut)] px-8 py-16 text-[var(--kayra-ivory)] md:px-16 md:py-20">
           <div className="max-w-md">
             <p className="text-[11px] uppercase tracking-[0.5em] text-[var(--kayra-gold)]">
               The Atelier

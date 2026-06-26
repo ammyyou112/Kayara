@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { RouteTransition } from "@/components/motion/RouteTransition";
+import { BrandLoader } from "@/components/site/BrandLoader";
 
 export const metadata: Metadata = {
   title: {
@@ -26,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <BrandLoader />
         <LenisProvider />
         <CartProvider>
           <RouteTransition>{children}</RouteTransition>

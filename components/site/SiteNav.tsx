@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 
-type Tone = "light" | "dark";
+type Tone = "light";
 
 type MenuGroup = {
   label: string;
@@ -42,13 +43,6 @@ const tones: Record<Tone, { shell: string; panel: string; border: string }> = {
     panel:
       "bg-[var(--kayra-cream)] text-[var(--kayra-walnut)] border-[var(--kayra-walnut)]/12",
     border: "border-[var(--kayra-walnut)]/12"
-  },
-  dark: {
-    shell:
-      "bg-[var(--jewel-black)]/75 text-[var(--jewel-pearl)] border-[var(--jewel-champagne)]/18",
-    panel:
-      "bg-[var(--jewel-charcoal)] text-[var(--jewel-pearl)] border-[var(--jewel-champagne)]/18",
-    border: "border-[var(--jewel-champagne)]/18"
   }
 };
 
@@ -58,9 +52,11 @@ export function SiteNav({ tone = "light" }: { tone?: Tone }) {
   const t = tones[tone];
 
   return (
-    <header
-      className={`sticky top-0 z-40 border-b backdrop-blur-md ${t.shell}`}
-    >
+    <>
+      <AnnouncementBar />
+      <header
+        className={`sticky top-0 z-40 border-b backdrop-blur-md ${t.shell}`}
+      >
       <div className="relative flex items-center justify-between px-5 py-4 md:px-12">
         {/* Left: desktop nav */}
         <nav className="hidden items-center gap-7 text-[10px] uppercase tracking-[0.3em] lg:flex">
@@ -194,6 +190,7 @@ export function SiteNav({ tone = "light" }: { tone?: Tone }) {
           </nav>
         </div>
       ) : null}
-    </header>
+      </header>
+    </>
   );
 }

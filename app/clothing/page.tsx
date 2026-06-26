@@ -93,7 +93,7 @@ export default async function ClothingPage() {
             <ArrowUpRight size={15} strokeWidth={1.4} />
           </Link>
         </div>
-        <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
           {arrivals.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -139,7 +139,7 @@ export default async function ClothingPage() {
         </div>
         <div aria-hidden="true" className="absolute inset-0 bg-[rgba(9,7,6,0.6)]" />
         <div className="relative z-10 text-center text-[var(--kayra-ivory)]">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-[var(--jewel-champagne)]">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[var(--kayra-gold)]">
             The other world
           </p>
           <h2 className="mt-4 font-display text-5xl uppercase tracking-[0.18em] md:text-7xl">

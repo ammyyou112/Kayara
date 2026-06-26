@@ -32,7 +32,7 @@ export async function ProductView({
 
   return (
     <div className={`min-h-screen ${t.page}`}>
-      <SiteNav tone={world === "jewelry" ? "dark" : "light"} />
+      <SiteNav tone="light" />
 
       <main className="px-5 pb-24 md:px-12">
         <Link
@@ -74,7 +74,7 @@ export async function ProductView({
                 More from {collection?.title ?? "the collection"}
               </h2>
             </div>
-            <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
               {related.map((entry) => (
                 <ProductCard key={entry.id} product={entry} />
               ))}

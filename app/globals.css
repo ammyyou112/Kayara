@@ -119,6 +119,32 @@ button {
   outline-offset: 6px;
 }
 
+/* Circular autoplay progress ring for the hero pagination dots */
+@keyframes kayra-dot-progress {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.kayra-dot-progress {
+  animation-name: kayra-dot-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Hide the scrollbar on horizontal swipe carousels */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
