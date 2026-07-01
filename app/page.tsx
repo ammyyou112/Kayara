@@ -2,14 +2,18 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { shop } from "@/lib/shop";
 import { collectionHref } from "@/lib/format";
+import { unsplash } from "@/lib/images";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Media } from "@/components/site/Media";
+import { PinnedSection } from "@/components/site/PinnedSection";
 import { StoreHero } from "@/components/home/StoreHero";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
 import { MagazineShowcase } from "@/components/home/MagazineShowcase";
 import { NewArrivals } from "@/components/home/NewArrivals";
 import { InstagramGallery } from "@/components/home/InstagramGallery";
+
+const statementImages = [unsplash("1483985988355-763728e1935b", 2200)];
 
 export default async function Home() {
   const [collections, products] = await Promise.all([
@@ -94,6 +98,16 @@ export default async function Home() {
 
       {/* Magazine editorial showcase */}
       <MagazineShowcase />
+
+      {/* We are KAYRA — fixed statement */}
+      <PinnedSection
+        copy="A cinematic South Asian house of pret, bridal, and heirloom jewelry — shaped slowly and finished by hand."
+        ctaHref="/about"
+        ctaLabel="Discover the House"
+        eyebrow="Est. Karachi"
+        images={statementImages}
+        title="We are KAYRA"
+      />
 
       {/* Instagram / social gallery */}
       <InstagramGallery />

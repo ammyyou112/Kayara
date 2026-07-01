@@ -81,7 +81,7 @@ export function MagazineShowcase() {
       <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
         <motion.figure className="lg:col-span-7" {...reveal(stagger)}>
           <motion.div
-            className="relative aspect-[4/5] overflow-hidden sm:aspect-[16/11]"
+            className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/11]"
             variants={imageClip}
           >
             <motion.div className="absolute inset-0" variants={imageZoom}>

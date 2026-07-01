@@ -6,10 +6,11 @@ import { formatMoney, collectionHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import type { World } from "@/lib/shop/types";
 import { AddToBag } from "@/components/shop/AddToBag";
-import { ProductCard } from "@/components/shop/ProductCard";
 import { ProductGallery } from "@/components/shop/ProductGallery";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
+import { ProductCarousel } from "@/components/home/ProductCarousel";
 
 export async function ProductView({
   world,
@@ -26,9 +27,20 @@ export async function ProductView({
 
   const t = themes[world];
   const collection = await shop.getCollection(product.collectionHandle);
-  const related = (await shop.getProductsByCollection(product.collectionHandle))
-    .filter((entry) => entry.id !== product.id)
-    .slice(0, 3);
+  const [related, allProducts] = await Promise.all([
+    shop.getProductsByCollection(product.collectionHandle),
+    shop.getProducts()
+  ]);
+
+  // Recommendations: collection-mates first, then the rest of the house.
+  const recommendations = [
+    ...related.filter((entry) => entry.id !== product.id),
+    ...allProducts.filter(
+      (entry) =>
+        entry.id !== product.id &&
+        entry.collectionHandle !== product.collectionHandle
+    )
+  ].slice(0, 8);
 
   return (
     <div className={`min-h-screen ${t.page}`}>
@@ -47,12 +59,18 @@ export async function ProductView({
           <ProductGallery product={product} />
 
           <div className="lg:py-6">
-            <p className={`text-[11px] uppercase tracking-[0.45em] ${t.eyebrow}`}>
-              {collection?.title ?? world}
-            </p>
-            <h1 className="mt-4 font-display text-4xl uppercase leading-[0.95] tracking-[0.18em] md:text-6xl">
-              {product.title}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={`text-[11px] uppercase tracking-[0.45em] ${t.eyebrow}`}>
+                  {collection?.title ?? world}
+                </p>
+                <h1 className="mt-4 font-display text-4xl uppercase leading-[0.95] tracking-[0.18em] md:text-6xl">
+                  {product.title}
+                </h1>
+              </div>
+              <WishlistButton className="mt-1 shrink-0" product={product} />
+            </div>
+
             <p className="mt-6 text-lg uppercase tracking-[0.24em]">
               {formatMoney(product.priceRange.minVariantPrice)}
             </p>
@@ -64,22 +82,15 @@ export async function ProductView({
           </div>
         </section>
 
-        {related.length > 0 ? (
-          <section aria-labelledby="related" className="mt-16">
-            <div className={`mb-8 border-b pb-4 ${t.line}`}>
-              <h2
-                className="font-display text-2xl uppercase tracking-[0.22em]"
-                id="related"
-              >
-                More from {collection?.title ?? "the collection"}
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
-              {related.map((entry) => (
-                <ProductCard key={entry.id} product={entry} />
-              ))}
-            </div>
-          </section>
+        {recommendations.length > 0 ? (
+          <div className="mt-8">
+            <ProductCarousel
+              eyebrow="For you"
+              products={recommendations}
+              title="You may also like"
+              viewAllHref="/shop"
+            />
+          </div>
         ) : null}
       </main>
 

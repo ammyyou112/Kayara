@@ -3,15 +3,31 @@ import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { shop } from "@/lib/shop";
 import { formatMoney, productHref } from "@/lib/format";
-import { jewel } from "@/lib/images";
+import { jewel, unsplash } from "@/lib/images";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Media } from "@/components/site/Media";
+import { PinnedSection } from "@/components/site/PinnedSection";
 
 export const metadata: Metadata = {
   title: "Jewelry",
   description: "The KAYRA Jewelry Edit — heirloom gold, pearl, and champagne."
 };
+
+const categories = [
+  { label: "Earrings", image: unsplash("1535632066927-ab7c9ab60908", 900) },
+  { label: "Necklaces", image: unsplash("1605100804763-247f67b3557e", 900) },
+  { label: "Rings", image: unsplash("1599643478518-a784e5dc4c8f", 900) },
+  { label: "Bangles", image: unsplash("1515562141207-7a88fb7ce338", 900) }
+];
+
+const sliderImages = [
+  unsplash("1611591437281-460bfbe1220a", 2200),
+  unsplash("1515562141207-7a88fb7ce338", 2200),
+  unsplash("1602173574767-37ac01994b2a", 2200)
+];
+
+const statementImages = [unsplash("1539109136881-3be0616acf4b", 2200)];
 
 export default async function JewelryPage() {
   const products = await shop.getProducts("jewelry");
@@ -23,7 +39,7 @@ export default async function JewelryPage() {
       <SiteNav tone="light" />
 
       {/* Magazine cover */}
-      <section className="relative flex h-[78vh] min-h-[30rem] flex-col justify-between overflow-hidden md:h-[92vh] md:min-h-[36rem]">
+      <section className="relative flex h-[66svh] min-h-[24rem] flex-col justify-between overflow-hidden md:h-[92vh] md:min-h-[36rem]">
         <Media alt="KAYRA Jewelry — the Edit" priority sizes="100vw" src={jewel.cover} />
         <div
           aria-hidden="true"
@@ -39,7 +55,7 @@ export default async function JewelryPage() {
           <p className="mb-4 text-[11px] uppercase tracking-[0.5em] text-[var(--kayra-gold)]">
             The Jewelry Edit
           </p>
-          <h1 className="max-w-4xl font-display text-6xl uppercase leading-[0.86] tracking-[0.12em] sm:text-7xl md:text-[10rem]">
+          <h1 className="max-w-4xl font-display text-5xl uppercase leading-[0.9] tracking-[0.12em] sm:text-7xl md:text-[10rem]">
             Heirloom
           </h1>
           <div className="mt-8 flex flex-wrap items-center gap-6">
@@ -70,9 +86,55 @@ export default async function JewelryPage() {
         </p>
       </section>
 
+      {/* Shop by category */}
+      <section className="px-6 py-16 md:px-12 md:py-20">
+        <div className="mb-8 text-center md:mb-10">
+          <p className="text-[10px] uppercase tracking-[0.45em] text-[var(--kayra-clay)]">
+            Find your piece
+          </p>
+          <h2 className="mt-2 font-display text-3xl uppercase tracking-[0.18em] md:text-5xl">
+            Shop by Category
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+          {categories.map((category) => (
+            <Link
+              className="group relative flex aspect-[4/5] items-end overflow-hidden border border-[var(--kayra-walnut)]/15"
+              href="/shop?world=jewelry"
+              key={category.label}
+            >
+              <div className="absolute inset-0 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105">
+                <Media
+                  alt={category.label}
+                  sizes="(max-width: 1024px) 50vw, 25vw"
+                  src={category.image}
+                />
+              </div>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,rgba(9,7,6,0.72))]"
+              />
+              <div className="relative z-10 w-full p-4 text-center text-[var(--kayra-ivory)]">
+                <h3 className="font-display text-lg uppercase tracking-[0.16em] md:text-xl">
+                  {category.label}
+                </h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Fixed-background slider */}
+      <PinnedSection
+        copy="Gold, pearl, and champagne — pieces made to be handed down."
+        eyebrow="The House of Heirloom"
+        images={sliderImages}
+        title="Worn close, kept for life"
+      />
+
       {/* Feature spread 01 */}
       <section className="grid items-stretch gap-px border-y border-[var(--kayra-walnut)]/15 lg:grid-cols-12">
-        <div className="relative min-h-[48vh] lg:col-span-7 lg:min-h-[60vh]">
+        <div className="relative min-h-[36svh] lg:col-span-7 lg:min-h-[60vh]">
           <Media alt="Champagne macro" sizes="(max-width: 1024px) 100vw, 58vw" src={jewel.macro} />
         </div>
         <div className="flex items-center px-8 py-16 lg:col-span-5 lg:px-14">
@@ -179,26 +241,15 @@ export default async function JewelryPage() {
         </p>
       </section>
 
-      {/* Two-up spread */}
-      <section className="grid gap-px md:grid-cols-2">
-        {[
-          { src: jewel.spread[0], caption: "Gold, close at the throat" },
-          { src: jewel.spread[1], caption: "A single pearl, a quiet vow" }
-        ].map((shot) => (
-          <figure className="relative" key={shot.caption}>
-            <div className="relative min-h-[44vh] md:min-h-[58vh]">
-              <Media alt={shot.caption} sizes="(max-width: 768px) 100vw, 50vw" src={shot.src} />
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 bg-[linear-gradient(180deg,transparent_55%,rgba(9,7,6,0.55))]"
-              />
-            </div>
-            <figcaption className="absolute bottom-5 left-5 text-[10px] uppercase tracking-[0.34em] text-[var(--kayra-ivory)]/85">
-              {shot.caption}
-            </figcaption>
-          </figure>
-        ))}
-      </section>
+      {/* We are KAYRA — fixed statement */}
+      <PinnedSection
+        copy="A cinematic South Asian house of pret, bridal, and heirloom jewelry — shaped slowly and finished by hand."
+        ctaHref="/about"
+        ctaLabel="Discover the House"
+        eyebrow="Est. Karachi"
+        images={statementImages}
+        title="We are KAYRA"
+      />
 
       {/* Closing CTA */}
       <section className="px-6 py-20 text-center md:py-36">

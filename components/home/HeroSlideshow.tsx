@@ -35,7 +35,7 @@ export function HeroSlideshow({
   }, [index, reduced, go]);
 
   return (
-    <section className="relative h-[72vh] min-h-[28rem] w-full overflow-hidden bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)] md:h-[88vh] md:min-h-[34rem]">
+    <section className="relative h-[62svh] min-h-[22rem] w-full overflow-hidden bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)] md:h-[88vh] md:min-h-[34rem]">
       {slides.map((slide, i) => {
         const active = i === index;
         return (
@@ -72,7 +72,7 @@ export function HeroSlideshow({
                   {slide.eyebrow}
                 </p>
                 <h1
-                  className={`max-w-4xl font-display text-5xl uppercase leading-[0.92] tracking-[0.16em] transition-all delay-100 duration-700 md:text-8xl ${
+                  className={`max-w-4xl font-display text-4xl uppercase leading-[0.95] tracking-[0.16em] transition-all delay-100 duration-700 sm:text-5xl md:text-8xl ${
                     active ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
                   }`}
                 >

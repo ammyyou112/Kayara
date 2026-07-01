@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { Media } from "@/components/site/Media";
 import { storeHeroSlides } from "@/lib/images";
 
@@ -30,18 +31,16 @@ export function StoreHero() {
   }, [index, reduced, select]);
 
   return (
-    <section className="relative h-[70vh] min-h-[26rem] w-full overflow-hidden bg-[var(--kayra-walnut)] md:h-[76vh] md:min-h-[32rem]">
+    <section className="relative h-[60svh] min-h-[22rem] w-full overflow-hidden bg-[var(--kayra-walnut)] md:h-[76vh] md:min-h-[32rem]">
       {storeHeroSlides.map((slide, i) => {
         const active = i === index;
         return (
-          <Link
+          <div
             aria-hidden={!active}
             className={`absolute inset-0 transition-opacity duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
               active ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
-            href={slide.href}
             key={slide.id}
-            tabIndex={active ? 0 : -1}
           >
             <div
               className={`absolute inset-0 transition-[filter,transform] ease-out ${
@@ -50,12 +49,47 @@ export function StoreHero() {
             >
               <Media alt={slide.alt} priority={i === 0} sizes="100vw" src={slide.image} />
             </div>
-          </Link>
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,7,6,0.15)_35%,rgba(9,7,6,0.72))]"
+            />
+
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full px-6 md:px-12">
+                <p
+                  className={`mb-2 text-[9px] uppercase tracking-[0.4em] text-[var(--kayra-gold)] transition-all duration-700 md:text-[10px] ${
+                    active ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                  }`}
+                >
+                  {slide.eyebrow}
+                </p>
+                <p
+                  className={`max-w-md text-sm uppercase tracking-[0.22em] text-[var(--kayra-ivory)] transition-all delay-100 duration-700 md:text-base ${
+                    active ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                  }`}
+                >
+                  {slide.title}
+                </p>
+                <Link
+                  className={`magnetic-focus mt-4 inline-flex items-center gap-2 border-b border-[var(--kayra-ivory)]/50 pb-1 text-[10px] uppercase tracking-[0.28em] text-[var(--kayra-ivory)] transition hover:border-[var(--kayra-ivory)] ${
+                    active
+                      ? "translate-y-0 opacity-100"
+                      : "pointer-events-none translate-y-2 opacity-0"
+                  }`}
+                  href={slide.href}
+                  tabIndex={active ? 0 : -1}
+                >
+                  {slide.cta}
+                  <ArrowUpRight size={13} strokeWidth={1.5} />
+                </Link>
+              </div>
+            </div>
+          </div>
         );
       })}
 
       {/* Dot pagination with circular autoplay-progress ring */}
-      <div className="absolute bottom-7 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3.5">
+      <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 md:bottom-8 md:gap-3.5">
         {storeHeroSlides.map((slide, i) => {
           const active = i === index;
           return (

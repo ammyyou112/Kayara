@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { themes } from "@/lib/theme";
+import { formatMoney } from "@/lib/format";
 import type { Product } from "@/lib/shop/types";
 
 export function AddToBag({ product }: { product: Product }) {
@@ -28,6 +29,15 @@ export function AddToBag({ product }: { product: Product }) {
     setJustAdded(true);
     window.setTimeout(() => setJustAdded(false), 1800);
   };
+
+  const label = justAdded ? (
+    <>
+      <Check size={15} strokeWidth={1.6} />
+      Added to bag
+    </>
+  ) : (
+    "Add to bag"
+  );
 
   return (
     <div className="mt-10">
@@ -63,21 +73,35 @@ export function AddToBag({ product }: { product: Product }) {
         </fieldset>
       ) : null}
 
+      {/* Inline button — desktop */}
       <button
-        className={`magnetic-focus mt-8 inline-flex h-14 w-full items-center justify-center gap-3 border px-8 text-[11px] uppercase tracking-[0.34em] transition duration-500 sm:w-auto ${t.solidBtn}`}
+        className={`magnetic-focus mt-8 hidden h-14 items-center justify-center gap-3 border px-8 text-[11px] uppercase tracking-[0.34em] transition duration-500 lg:inline-flex ${t.solidBtn}`}
         disabled={!selected?.availableForSale}
         onClick={handleAdd}
         type="button"
       >
-        {justAdded ? (
-          <>
-            <Check size={15} strokeWidth={1.6} />
-            Added to bag
-          </>
-        ) : (
-          "Add to bag"
-        )}
+        {label}
       </button>
+
+      {/* Sticky bar — mobile, keeps the CTA reachable while scrolling */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-4 border-t border-[var(--kayra-walnut)]/15 bg-[var(--kayra-cream)]/95 px-5 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] pt-3 backdrop-blur-md lg:hidden">
+        <div className="shrink-0">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-[var(--kayra-walnut)]/55">
+            {selected?.title ? `Size ${selected.title}` : "Price"}
+          </p>
+          <p className="text-sm uppercase tracking-[0.16em]">
+            {formatMoney(selected?.price ?? product.priceRange.minVariantPrice)}
+          </p>
+        </div>
+        <button
+          className={`magnetic-focus inline-flex h-12 flex-1 items-center justify-center gap-2 px-6 text-[11px] uppercase tracking-[0.3em] transition ${t.solidBtn}`}
+          disabled={!selected?.availableForSale}
+          onClick={handleAdd}
+          type="button"
+        >
+          {label}
+        </button>
+      </div>
     </div>
   );
 }

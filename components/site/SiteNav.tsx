@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 
 type Tone = "light";
@@ -17,7 +18,7 @@ type MenuGroup = {
 const groups: MenuGroup[] = [
   {
     label: "Clothing",
-    href: "/clothing",
+    href: "/",
     links: [
       { label: "Luxe Pret", href: "/clothing/collections/luxe-pret" },
       { label: "Bridal", href: "/clothing/collections/bridal" }
@@ -48,6 +49,7 @@ const tones: Record<Tone, { shell: string; panel: string; border: string }> = {
 
 export function SiteNav({ tone = "light" }: { tone?: Tone }) {
   const { count, ready } = useCart();
+  const { count: wishCount, ready: wishReady } = useWishlist();
   const [open, setOpen] = useState(false);
   const t = tones[tone];
 
@@ -110,20 +112,32 @@ export function SiteNav({ tone = "light" }: { tone?: Tone }) {
         {/* Center: wordmark (absolutely centred so it never drifts with the
             differing widths of the nav and the utilities) */}
         <Link
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-xl tracking-[0.5em] md:text-2xl"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-base tracking-[0.3em] md:text-2xl md:tracking-[0.5em]"
           href="/"
         >
           KAYRA
         </Link>
 
         {/* Right: utilities */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4 md:gap-5">
           <Link
             aria-label="Search"
             className="magnetic-focus transition hover:opacity-60"
             href="/search"
           >
             <Search size={18} strokeWidth={1.4} />
+          </Link>
+          <Link
+            aria-label={`Wishlist, ${wishReady ? wishCount : 0} items`}
+            className="magnetic-focus relative inline-flex items-center transition hover:opacity-60"
+            href="/wishlist"
+          >
+            <Heart size={18} strokeWidth={1.4} />
+            {wishReady && wishCount > 0 ? (
+              <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-[var(--kayra-clay)] text-[9px] tabular-nums text-[var(--kayra-ivory)]">
+                {wishCount}
+              </span>
+            ) : null}
           </Link>
           <Link
             aria-label={`Bag, ${ready ? count : 0} items`}

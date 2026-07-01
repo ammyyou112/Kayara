@@ -3,6 +3,7 @@ import type { Product } from "@/lib/shop/types";
 import { formatMoney, productHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import { Media } from "@/components/site/Media";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 
 export function ProductCard({ product }: { product: Product }) {
   const t = themes[product.world];
@@ -21,6 +22,10 @@ export function ProductCard({ product }: { product: Product }) {
           className="transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           src={image?.url ?? ""}
+        />
+        <WishlistButton
+          className="absolute right-2 top-2 z-10 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100"
+          product={product}
         />
       </div>
       <div className="mt-4 flex items-baseline justify-between gap-4">

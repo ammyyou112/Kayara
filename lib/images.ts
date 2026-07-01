@@ -75,6 +75,9 @@ export type StoreSlide = {
   image: string;
   href: string;
   alt: string;
+  eyebrow: string;
+  title: string;
+  cta: string;
 };
 
 export const storeHeroSlides: StoreSlide[] = [
@@ -82,36 +85,54 @@ export const storeHeroSlides: StoreSlide[] = [
     id: "pret",
     image: unsplash("1490481651871-ab68de25d43d", 2200),
     href: "/clothing/collections/luxe-pret",
-    alt: "Luxe Pret campaign"
+    alt: "Luxe Pret campaign",
+    eyebrow: "Luxe Pret — The Wedding Guest",
+    title: "Warm Editorial Pret",
+    cta: "Shop Pret"
   },
   {
     id: "bridal",
     image: unsplash("1591369822096-ffd140ec948f", 2200),
     href: "/clothing/collections/bridal",
-    alt: "Bridal campaign"
+    alt: "Bridal campaign",
+    eyebrow: "Bridal — Ceremony 2026",
+    title: "The Vow Collection",
+    cta: "Discover Bridal"
   },
   {
     id: "heirloom",
     image: unsplash("1602173574767-37ac01994b2a", 2200),
     href: "/jewelry/collections/heirloom",
-    alt: "Heirloom jewelry campaign"
+    alt: "Heirloom jewelry campaign",
+    eyebrow: "Heirloom — The Jewel Box",
+    title: "Gold, Pearl & Champagne",
+    cta: "Enter the Edit"
   },
   {
     id: "editorial",
     image: unsplash("1539109136881-3be0616acf4b", 2200),
-    href: "/clothing",
-    alt: "Clothing editorial"
+    href: "/shop?world=clothing",
+    alt: "Clothing editorial",
+    eyebrow: "Atelier — New Season",
+    title: "Made for the Occasion",
+    cta: "Shop Clothing"
   },
   {
     id: "jewel",
     image: unsplash("1611591437281-460bfbe1220a", 2200),
     href: "/jewelry",
-    alt: "Jewelry editorial"
+    alt: "Jewelry editorial",
+    eyebrow: "The House of Heirloom",
+    title: "Worn Close, Kept for Life",
+    cta: "Shop Jewelry"
   },
   {
     id: "season",
     image: unsplash("1502716119720-b23a93e5fe1b", 2200),
     href: "/shop",
-    alt: "New season"
+    alt: "New season",
+    eyebrow: "The Maison",
+    title: "The Full Collection",
+    cta: "Shop All"
   }
 ];

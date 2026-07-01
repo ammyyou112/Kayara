@@ -40,7 +40,7 @@ export default function LookbookPage() {
       <SiteNav tone="light" />
 
       {/* Cover */}
-      <section className="relative flex h-[72vh] min-h-[28rem] items-end overflow-hidden md:h-[90vh] md:min-h-[34rem]">
+      <section className="relative flex h-[64svh] min-h-[22rem] items-end overflow-hidden md:h-[90vh] md:min-h-[34rem]">
         <Media alt="KAYRA lookbook" priority sizes="100vw" src={first} />
         <div
           aria-hidden="true"
@@ -50,7 +50,7 @@ export default function LookbookPage() {
           <p className="mb-4 text-[11px] uppercase tracking-[0.5em] text-[var(--kayra-gold)]">
             Lookbook — Ceremony 2026
           </p>
-          <h1 className="font-display text-6xl uppercase leading-[0.9] tracking-[0.16em] md:text-9xl">
+          <h1 className="font-display text-5xl uppercase leading-[0.9] tracking-[0.16em] sm:text-6xl md:text-9xl">
             The Edit
           </h1>
         </div>
@@ -67,7 +67,7 @@ export default function LookbookPage() {
             }`}
             key={chapter.index}
           >
-            <div className="relative min-h-[48vh] [direction:ltr] lg:min-h-[70vh]">
+            <div className="relative min-h-[36svh] [direction:ltr] lg:min-h-[70vh]">
               <Media
                 alt={chapter.title}
                 sizes="(max-width: 1024px) 100vw, 50vw"

@@ -11,7 +11,7 @@ const columns: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "Shop",
     links: [
-      { label: "Clothing", href: "/clothing" },
+      { label: "Clothing", href: "/" },
       { label: "Jewelry", href: "/jewelry" },
       { label: "Shop All", href: "/shop" },
       { label: "Search", href: "/search" }
@@ -30,6 +30,7 @@ const columns: { heading: string; links: { label: string; href: string }[] }[] =
     links: [
       { label: "About", href: "/about" },
       { label: "Lookbook", href: "/lookbook" },
+      { label: "Wishlist", href: "/wishlist" },
       { label: "The KAYRA List", href: "#newsletter" }
     ]
   },

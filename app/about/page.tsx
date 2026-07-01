@@ -33,7 +33,7 @@ export default function AboutPage() {
       <SiteNav tone="light" />
 
       {/* Hero */}
-      <section className="relative flex h-[58vh] min-h-[24rem] items-end overflow-hidden md:h-[70vh] md:min-h-[28rem]">
+      <section className="relative flex h-[54svh] min-h-[20rem] items-end overflow-hidden md:h-[70vh] md:min-h-[28rem]">
         <Media
           alt="The KAYRA house"
           priority
@@ -82,7 +82,7 @@ export default function AboutPage() {
 
       {/* Atelier split */}
       <section className="grid lg:grid-cols-2">
-        <div className="relative min-h-[44vh] md:min-h-[60vh]">
+        <div className="relative min-h-[34svh] md:min-h-[60vh]">
           <Media
             alt="Inside the atelier"
             sizes="(max-width: 1024px) 100vw, 50vw"

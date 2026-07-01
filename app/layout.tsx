@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { RouteTransition } from "@/components/motion/RouteTransition";
 import { BrandLoader } from "@/components/site/BrandLoader";
@@ -30,7 +31,9 @@ export default function RootLayout({
         <BrandLoader />
         <LenisProvider />
         <CartProvider>
-          <RouteTransition>{children}</RouteTransition>
+          <WishlistProvider>
+            <RouteTransition>{children}</RouteTransition>
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

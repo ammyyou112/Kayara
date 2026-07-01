@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useCart } from "@/components/cart/CartProvider";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 import { Media } from "@/components/site/Media";
 import { themes } from "@/lib/theme";
 import { formatMoney, productHref } from "@/lib/format";
@@ -18,16 +19,26 @@ const tabs: { key: "all" | World; label: string }[] = [
   { key: "jewelry", label: "Jewelry" }
 ];
 
-export function NewArrivals({ products }: { products: Product[] }) {
+export function NewArrivals({
+  products,
+  showFilters = true,
+  eyebrow = "Just In",
+  title = "New Arrivals"
+}: {
+  products: Product[];
+  showFilters?: boolean;
+  eyebrow?: string;
+  title?: string;
+}) {
   const [filter, setFilter] = useState<"all" | World>("all");
   const reduce = useReducedMotion();
 
   const filtered = useMemo(
     () =>
-      filter === "all"
+      !showFilters || filter === "all"
         ? products
         : products.filter((product) => product.world === filter),
-    [filter, products]
+    [filter, products, showFilters]
   );
 
   const grid: Variants = {
@@ -48,14 +59,14 @@ export function NewArrivals({ products }: { products: Product[] }) {
       <div className="mb-9 flex flex-col gap-5 border-b border-[var(--kayra-walnut)]/15 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.45em] text-[var(--kayra-clay)]">
-            Just In
+            {eyebrow}
           </p>
           <h2 className="mt-2 font-display text-3xl uppercase tracking-[0.18em] md:text-5xl">
-            New Arrivals
+            {title}
           </h2>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className={`items-center gap-1 ${showFilters ? "flex" : "hidden"}`}>
           {tabs.map((tab) => {
             const active = filter === tab.key;
             return (
@@ -140,6 +151,10 @@ function ArrivalCard({ product }: { product: Product }) {
         <span className="pointer-events-none absolute left-2 top-2 z-10 bg-[var(--kayra-ivory)]/90 px-2 py-1 text-[8px] uppercase tracking-[0.28em] text-[var(--kayra-walnut)]">
           New
         </span>
+        <WishlistButton
+          className="absolute right-2 top-2 z-10"
+          product={product}
+        />
         <Link className="absolute inset-0" href={href}>
           <span
             className={`absolute inset-0 transition-opacity duration-700 ease-out ${

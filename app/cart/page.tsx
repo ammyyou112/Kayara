@@ -35,7 +35,7 @@ export default function CartPage() {
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 className="magnetic-focus inline-flex items-center border border-[var(--kayra-walnut)]/30 px-7 py-4 text-[11px] uppercase tracking-[0.32em] transition hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
-                href="/clothing"
+                href="/shop?world=clothing"
               >
                 Shop Clothing
               </Link>
@@ -92,18 +92,18 @@ export default function CartPage() {
                       <div className="inline-flex items-center border border-[var(--kayra-walnut)]/25">
                         <button
                           aria-label="Decrease quantity"
-                          className="magnetic-focus grid h-9 w-9 place-items-center transition hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
+                          className="magnetic-focus grid h-11 w-11 place-items-center transition hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
                           onClick={() => setQuantity(line.id, line.quantity - 1)}
                           type="button"
                         >
                           <Minus size={14} strokeWidth={1.5} />
                         </button>
-                        <span className="grid h-9 w-9 place-items-center text-xs tabular-nums">
+                        <span className="grid h-11 w-11 place-items-center text-xs tabular-nums">
                           {line.quantity}
                         </span>
                         <button
                           aria-label="Increase quantity"
-                          className="magnetic-focus grid h-9 w-9 place-items-center transition hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
+                          className="magnetic-focus grid h-11 w-11 place-items-center transition hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
                           onClick={() => setQuantity(line.id, line.quantity + 1)}
                           type="button"
                         >
@@ -133,12 +133,12 @@ export default function CartPage() {
                 Taxes and shipping calculated at checkout. Secure Shopify checkout
                 connects at launch.
               </p>
-              <button
+              <Link
                 className="magnetic-focus mt-7 inline-flex h-14 w-full items-center justify-center bg-[var(--kayra-walnut)] px-8 text-[11px] uppercase tracking-[0.34em] text-[var(--kayra-ivory)] transition hover:bg-[var(--kayra-clay)]"
-                type="button"
+                href="/checkout"
               >
                 Proceed to checkout
-              </button>
+              </Link>
             </div>
           </section>
         )}

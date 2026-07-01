@@ -29,7 +29,7 @@ export async function CollectionView({
     <div className={`min-h-screen ${t.page}`}>
       <SiteNav tone="light" />
 
-      <section className="relative flex h-[50vh] min-h-80 items-end overflow-hidden md:h-[58vh] md:min-h-96">
+      <section className="relative flex h-[46svh] min-h-72 items-end overflow-hidden md:h-[58vh] md:min-h-96">
         <Media
           alt={collection.heroImage.altText}
           priority
