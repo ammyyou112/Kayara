@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { INTRO_SEEN_KEY } from "@/lib/intro";
 
 const letters = "KAYRA".split("");
 
@@ -9,7 +10,16 @@ export function BrandLoader() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDone(true), 2000);
+    if (document.documentElement.dataset.introSeen) {
+      setDone(true);
+      return;
+    }
+    try {
+      sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+    } catch {
+      // Storage unavailable: the intro simply plays again next time.
+    }
+    const timer = window.setTimeout(() => setDone(true), 1800);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -24,7 +34,7 @@ export function BrandLoader() {
     <AnimatePresence>
       {!done ? (
         <motion.div
-          className="fixed inset-0 z-[100] grid place-items-center bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)]"
+          className="kayra-intro fixed inset-0 z-[100] grid place-items-center bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)]"
           exit={{ y: "-100%" }}
           transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
         >

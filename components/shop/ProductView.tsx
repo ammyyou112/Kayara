@@ -1,100 +1,121 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { shop } from "@/lib/shop";
-import { formatMoney, collectionHref } from "@/lib/format";
+import { formatMoney, formatPriceRange, collectionHref, productHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import type { World } from "@/lib/shop/types";
 import { AddToBag } from "@/components/shop/AddToBag";
 import { ProductGallery } from "@/components/shop/ProductGallery";
-import { SiteNav } from "@/components/site/SiteNav";
-import { SiteFooter } from "@/components/site/SiteFooter";
+import { compareAtFor } from "@/components/shop/ProductCard";
 import { WishlistButton } from "@/components/wishlist/WishlistButton";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
 
-export async function ProductView({
-  world,
-  handle
-}: {
-  world: World;
-  handle: string;
-}) {
+export async function ProductView({ world, handle }: { world: World; handle: string }) {
   const product = await shop.getProduct(handle);
 
-  if (!product || product.world !== world) {
+  if (!product) {
     notFound();
+  }
+  // A product re-categorised in Shopify keeps working from old links.
+  if (product.world !== world) {
+    permanentRedirect(productHref(product.world, product.handle));
   }
 
   const t = themes[world];
-  const collection = await shop.getCollection(product.collectionHandle);
-  const [related, allProducts] = await Promise.all([
-    shop.getProductsByCollection(product.collectionHandle),
-    shop.getProducts()
+  const [collection, recommendations] = await Promise.all([
+    product.collectionHandle ? shop.getCollection(product.collectionHandle) : null,
+    shop.getRecommendations(product)
   ]);
+  const backHref = collection
+    ? collectionHref(collection.world, collection.handle)
+    : world === "jewelry"
+      ? "/jewelry"
+      : "/shop?world=clothing";
+  const backLabel = collection?.title ?? (world === "jewelry" ? "Jewelry" : "Clothing");
+  const compareAt = compareAtFor(product);
 
-  // Recommendations: collection-mates first, then the rest of the house.
-  const recommendations = [
-    ...related.filter((entry) => entry.id !== product.id),
-    ...allProducts.filter(
-      (entry) =>
-        entry.id !== product.id &&
-        entry.collectionHandle !== product.collectionHandle
-    )
-  ].slice(0, 8);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description,
+    image: product.images.map((image) => image.url),
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: product.priceRange.minVariantPrice.currencyCode,
+      lowPrice: product.priceRange.minVariantPrice.amount,
+      highPrice: product.priceRange.maxVariantPrice.amount,
+      availability: product.availableForSale
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock"
+    }
+  };
 
   return (
-    <div className={`min-h-screen ${t.page}`}>
-      <SiteNav tone="light" />
+    <div className={t.page}>
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        type="application/ld+json"
+      />
 
-      <main className="px-5 pb-24 md:px-12">
+      <main className="px-5 pb-16 md:px-8 xl:px-12">
         <Link
-          className={`mt-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] transition hover:opacity-60 ${t.muted}`}
-          href={collectionHref(world, product.collectionHandle)}
+          className={`mt-6 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] transition hover:opacity-60 md:mt-8 ${t.muted}`}
+          href={backHref}
         >
           <ArrowLeft size={14} strokeWidth={1.4} />
-          {collection?.title ?? world}
+          {backLabel}
         </Link>
 
-        <section className="grid gap-10 py-10 lg:grid-cols-2 lg:gap-16">
+        <section className="grid gap-8 py-8 md:py-10 lg:grid-cols-2 lg:gap-16">
           <ProductGallery product={product} />
 
           <div className="lg:py-6">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className={`text-[11px] uppercase tracking-[0.45em] ${t.eyebrow}`}>
-                  {collection?.title ?? world}
-                </p>
-                <h1 className="mt-4 font-display text-4xl uppercase leading-[0.95] tracking-[0.18em] md:text-6xl">
+              <div className="min-w-0">
+                <p className={`text-[11px] uppercase tracking-[0.4em] ${t.eyebrow}`}>{backLabel}</p>
+                <h1 className="mt-4 font-display text-3xl uppercase leading-[1.05] tracking-[0.12em] sm:text-4xl md:text-5xl md:tracking-[0.16em] xl:text-6xl">
                   {product.title}
                 </h1>
               </div>
               <WishlistButton className="mt-1 shrink-0" product={product} />
             </div>
 
-            <p className="mt-6 text-lg uppercase tracking-[0.24em]">
-              {formatMoney(product.priceRange.minVariantPrice)}
-            </p>
-            <p className={`mt-8 max-w-md text-sm leading-7 tracking-[0.04em] ${t.muted}`}>
-              {product.description}
+            <p className="mt-6 text-lg uppercase tracking-[0.2em]">
+              {formatPriceRange(product.priceRange)}
+              {compareAt ? (
+                <span className="ml-3 text-sm text-[var(--kayra-walnut)]/45 line-through">
+                  {formatMoney(compareAt)}
+                </span>
+              ) : null}
             </p>
 
             <AddToBag product={product} />
+
+            {product.descriptionHtml ? (
+              <div
+                className={`rte mt-10 max-w-lg border-t border-[var(--kayra-walnut)]/15 pt-8 text-sm ${t.muted}`}
+                // Authored by the merchant in Shopify admin.
+                dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+              />
+            ) : product.description ? (
+              <p className={`mt-10 max-w-lg border-t border-[var(--kayra-walnut)]/15 pt-8 text-sm leading-7 tracking-[0.03em] ${t.muted}`}>
+                {product.description}
+              </p>
+            ) : null}
           </div>
         </section>
-
-        {recommendations.length > 0 ? (
-          <div className="mt-8">
-            <ProductCarousel
-              eyebrow="For you"
-              products={recommendations}
-              title="You may also like"
-              viewAllHref="/shop"
-            />
-          </div>
-        ) : null}
       </main>
 
-      <SiteFooter />
+      {recommendations.length > 0 ? (
+        <ProductCarousel
+          eyebrow="For you"
+          products={recommendations}
+          title="You may also like"
+          viewAllHref={backHref}
+        />
+      ) : null}
     </div>
   );
 }

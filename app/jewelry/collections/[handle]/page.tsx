@@ -9,7 +9,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { handle } = await params;
   const collection = await shop.getCollection(handle);
-  return { title: collection?.title ?? "Collection" };
+  if (!collection) {
+    return { title: "Collection" };
+  }
+  return {
+    title: collection.seo?.title || collection.title,
+    description: collection.seo?.description || collection.description || undefined,
+    openGraph: collection.heroImage
+      ? { images: [{ url: collection.heroImage.url, alt: collection.heroImage.altText }] }
+      : undefined
+  };
 }
 
 export default async function JewelryCollectionPage({

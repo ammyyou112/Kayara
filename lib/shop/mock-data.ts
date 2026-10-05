@@ -183,10 +183,13 @@ export const products: Product[] = seeds.map((seed) => ({
   world: seed.world,
   collectionHandle: seed.collectionHandle,
   description: seed.description,
+  tags: [seed.world, seed.collectionHandle],
+  availableForSale: true,
   priceRange: {
     minVariantPrice: pkr(seed.price),
     maxVariantPrice: pkr(seed.price)
   },
+  options: seed.sizes.length > 1 ? [{ name: "Size", values: seed.sizes }] : [],
   images: seed.images.map((url, index) => ({
     url,
     altText: `${seed.title} — KAYRA editorial, view ${index + 1}`

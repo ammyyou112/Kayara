@@ -8,6 +8,7 @@ import {
   useMemo,
   useState
 } from "react";
+import { getProductsByHandlesAction } from "@/app/actions/products";
 import type { Product } from "@/lib/shop/types";
 
 const STORAGE_KEY = "kayra-wishlist-v1";
@@ -34,6 +35,14 @@ const isProductArray = (value: unknown): value is Product[] =>
       "handle" in entry
   );
 
+// Snapshots saved by older versions of the site lack newer fields.
+const normalize = (product: Product): Product => ({
+  ...product,
+  tags: product.tags ?? [],
+  options: product.options ?? [],
+  availableForSale: product.availableForSale ?? true
+});
+
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<Product[]>([]);
   const [ready, setReady] = useState(false);
@@ -44,7 +53,20 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (isProductArray(parsed)) {
-          setItems(parsed);
+          setItems(parsed.map(normalize));
+          // Saved snapshots can go stale (price changes, deleted products):
+          // refresh them from the store, keeping the saved order.
+          const handles = parsed.map((item) => item.handle);
+          getProductsByHandlesAction(handles)
+            .then((fresh) => {
+              const byHandle = new Map(fresh.map((product) => [product.handle, product]));
+              setItems((current) =>
+                current
+                  .map((item) => byHandle.get(item.handle))
+                  .filter((item): item is Product => Boolean(item))
+              );
+            })
+            .catch(() => undefined);
         }
       }
     } catch {

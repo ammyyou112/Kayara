@@ -40,7 +40,7 @@ export function PinnedSection({
   }, [images.length]);
 
   return (
-    <section className="relative flex min-h-[38svh] items-center justify-center overflow-hidden md:min-h-[92vh]">
+    <section className="relative flex min-h-[46svh] items-center justify-center overflow-hidden md:min-h-[80vh]">
       {images.map((src, i) => (
         <div
           aria-hidden="true"
@@ -58,10 +58,10 @@ export function PinnedSection({
       />
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-12 text-center text-[var(--kayra-ivory)] md:py-20">
-        <p className="mb-4 text-[10px] uppercase tracking-[0.5em] text-[var(--kayra-gold)] md:mb-5 md:text-[11px]">
+        <p className="mb-4 text-[10px] uppercase tracking-[0.5em] text-[var(--kayra-gold-light)] md:mb-5 md:text-[11px]">
           {eyebrow}
         </p>
-        <h2 className="font-display text-3xl uppercase leading-[0.95] tracking-[0.14em] sm:text-4xl md:text-7xl">
+        <h2 className="font-display text-3xl uppercase leading-[1.05] tracking-[0.12em] sm:text-4xl md:text-6xl lg:text-7xl">
           {title}
         </h2>
         {copy ? (

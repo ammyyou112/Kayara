@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Search as SearchIcon } from "lucide-react";
 import { shop } from "@/lib/shop";
-import { SiteNav } from "@/components/site/SiteNav";
-import { SiteFooter } from "@/components/site/SiteFooter";
 import { ProductCard } from "@/components/shop/ProductCard";
 
 export const metadata: Metadata = {
@@ -20,12 +18,11 @@ export default async function SearchPage({
   const results = query ? await shop.searchProducts(query) : [];
 
   return (
-    <div className="min-h-screen bg-[var(--kayra-cream)] text-[var(--kayra-walnut)]">
-      <SiteNav tone="light" />
+    <>
 
       <main className="mx-auto max-w-5xl px-5 pb-24 md:px-8">
-        <header className="py-14 text-center md:py-20">
-          <h1 className="font-display text-5xl uppercase tracking-[0.24em] md:text-6xl">
+        <header className="py-12 text-center md:py-20">
+          <h1 className="font-display text-4xl uppercase tracking-[0.2em] sm:text-5xl md:text-6xl md:tracking-[0.24em]">
             Search
           </h1>
 
@@ -40,15 +37,14 @@ export default async function SearchPage({
               <input
                 aria-label="Search products"
                 autoComplete="off"
-                autoFocus
-                className="w-full bg-transparent text-sm uppercase tracking-[0.22em] outline-none placeholder:text-[var(--kayra-walnut)]/40"
+                className="w-full min-w-0 bg-transparent text-base uppercase tracking-[0.16em] outline-none md:text-sm md:tracking-[0.22em] placeholder:text-[var(--kayra-walnut)]/40"
                 defaultValue={query}
                 name="q"
                 placeholder="Search pieces, collections…"
                 type="search"
               />
               <button
-                className="magnetic-focus text-[10px] uppercase tracking-[0.3em] text-[var(--kayra-walnut)]/60 transition hover:text-[var(--kayra-walnut)]"
+                className="magnetic-focus shrink-0 px-1 py-2 text-[10px] uppercase tracking-[0.3em] text-[var(--kayra-walnut)]/60 transition hover:text-[var(--kayra-walnut)]"
                 type="submit"
               >
                 Go
@@ -65,7 +61,7 @@ export default async function SearchPage({
                 : `${results.length} ${results.length === 1 ? "result" : "results"} for “${query}”`}
             </p>
             {results.length > 0 ? (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3">
                 {results.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -78,8 +74,6 @@ export default async function SearchPage({
           </p>
         )}
       </main>
-
-      <SiteFooter />
-    </div>
+    </>
   );
 }

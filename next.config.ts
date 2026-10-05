@@ -2,20 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Images are remote Unsplash/Shopify URLs already sized via CDN params, so
-    // we skip Next's optimizer (which otherwise times out on large sources in
-    // dev). Swap to false once self-hosted product photography is in place.
-    unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "cdn.shopify.com"
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com"
-      }
-    ]
+    // Shopify's and Unsplash's CDNs resize on the fly; the custom loader just
+    // requests the right width for each srcset entry.
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts"
+  },
+  async redirects() {
+    return [
+      // The home page is the clothing storefront.
+      { source: "/clothing", destination: "/", permanent: false },
+      // Shopify-style URLs (from rich text, emails, old links) → storefront routes.
+      { source: "/collections/all", destination: "/shop", permanent: true },
+      { source: "/collections", destination: "/shop", permanent: true },
+      { source: "/products", destination: "/shop", permanent: true }
+    ];
   }
 };
 
