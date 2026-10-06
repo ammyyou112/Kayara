@@ -3,8 +3,8 @@ import { shop } from "./index";
 import { defaultContentBlocks } from "./content";
 import type { ContentBlock, ContentBlockDefaults } from "./types";
 
-// Editable storefront sections. Shopify's content_block entries are fetched
-// once per request; each field falls back to lib/shop/content.ts when empty.
+// Editable storefront sections. The Shopify content is fetched once per
+// request; each field falls back to lib/shop/content.ts when empty.
 
 const loadBlocks = cache(async () => shop.getContentBlocks());
 
@@ -27,7 +27,7 @@ const withDefaults = (key: string, block?: ContentBlock): ContentBlock => {
 /** One section, e.g. getBlock("home-statement"). */
 export async function getBlock(key: string): Promise<ContentBlock> {
   const blocks = await loadBlocks();
-  return withDefaults(key, blocks.find((block) => block.key === key));
+  return withDefaults(key, blocks.find((block) => !block.list && block.key === key));
 }
 
 /** Several sections at once, in the order requested. */
@@ -38,18 +38,17 @@ export async function getBlockMap<K extends string>(keys: K[]): Promise<Record<K
 
 /**
  * A repeatable list, e.g. getBlockList("lookbook-chapter") returns every
- * lookbook-chapter-* entry sorted by Position. When Shopify has none, the
- * built-in defaults are used.
+ * Lookbook chapter entry sorted by its Order field. When Shopify has none,
+ * the built-in lookbook-chapter-* defaults are used.
  */
-export async function getBlockList(prefix: string): Promise<ContentBlock[]> {
-  const matches = (key: string) => key.startsWith(`${prefix}-`);
-  const blocks = (await loadBlocks()).filter((block) => matches(block.key));
-  const list = blocks.length
-    ? blocks.map((block) => withDefaults(block.key, block))
+export async function getBlockList(list: string): Promise<ContentBlock[]> {
+  const blocks = (await loadBlocks()).filter((block) => block.list === list);
+  const items = blocks.length
+    ? blocks.map((block) => ({ ...withDefaults(block.key, block), list }))
     : Object.keys(defaultContentBlocks)
-        .filter(matches)
+        .filter((key) => key.startsWith(`${list}-`))
         .map((key) => withDefaults(key));
-  return list.sort((a, b) => a.position - b.position || a.key.localeCompare(b.key));
+  return items.sort((a, b) => a.position - b.position || a.key.localeCompare(b.key));
 }
 
 /** Splits a multi-line text field into paragraphs (blank line = new paragraph). */

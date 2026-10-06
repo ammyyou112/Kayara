@@ -158,6 +158,25 @@ html[data-intro-seen] .kayra-intro {
   animation-fill-mode: forwards;
 }
 
+/* Running announcement bar: the track holds two identical halves and slides
+   by one half, so the loop is seamless. Pauses while hovered. */
+@keyframes kayra-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.kayra-marquee {
+  animation: kayra-marquee 30s linear infinite;
+}
+
+.kayra-marquee-wrap:hover .kayra-marquee {
+  animation-play-state: paused;
+}
+
 /* Hide the scrollbar on horizontal swipe carousels */
 .no-scrollbar {
   -ms-overflow-style: none;

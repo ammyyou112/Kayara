@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description: "The KAYRA lookbook — a cinematic editorial of pret and jewelry."
 };
 
-// The cover is the "lookbook-cover" content block; each chapter is a
-// lookbook-chapter-* content block, ordered by its Position field.
+// Shopify → Metaobjects: the cover is "Lookbook page"; each chapter is an
+// entry of "Lookbook — chapters", ordered by its Order field.
 export default async function LookbookPage() {
   const [cover, chapters] = await Promise.all([
     getBlock("lookbook-cover"),

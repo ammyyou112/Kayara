@@ -1,10 +1,15 @@
-// One-time Shopify setup for the KAYRA storefront:  npm run shopify:setup
+// Shopify setup for the KAYRA storefront:  npm run shopify:setup
 //
-// Creates (or completes) the metaobject definitions the site reads —
-// site_settings, hero_slide and content_block — with Storefront access turned
-// on, then adds a starter entry for every editable section with the current
-// website text, so it can be edited straight away in Shopify admin → Content →
-// Metaobjects. Safe to run again: existing fields and entries are never changed.
+// Creates the content sections the website reads (Shopify admin → Content →
+// Metaobjects), as described in lib/shop/cms.ts: Announcement bar, Contact &
+// WhatsApp, Social media links, Footer, Homepage, Homepage slider, Shop page,
+// Jewelry page, About page (+ values), Lookbook page (+ chapters), Size guide
+// and Google search. Each is filled with the current website text.
+//
+// Safe to run again: it renames/adds fields to match cms.ts but never changes
+// entries that already exist. Values from the older "Site settings",
+// "Content block" and "Hero slide" definitions are copied across, saved to
+// scripts/backups/, and those old definitions are then removed.
 //
 // Needs an Admin API credential with the write_metaobject_definitions and
 // write_metaobjects scopes, in .env.local:
@@ -13,7 +18,15 @@
 // or, for an app made in the Shopify Dev Dashboard:
 //   SHOPIFY_ADMIN_CLIENT_ID=…  SHOPIFY_ADMIN_CLIENT_SECRET=…
 
-import { defaultContentBlocks } from "../lib/shop/content.ts";
+import { mkdirSync, writeFileSync } from "node:fs";
+import {
+  cmsDefinitions,
+  parseTarget,
+  type CmsDefinition,
+  type CmsField,
+  type CmsFieldType
+} from "../lib/shop/cms.ts";
+import { defaultContentBlocks, defaultSettingsText } from "../lib/shop/content.ts";
 
 const domain = (process.env.SHOPIFY_STORE_DOMAIN ?? "")
   .trim()
@@ -21,136 +34,23 @@ const domain = (process.env.SHOPIFY_STORE_DOMAIN ?? "")
   .replace(/\/.*$/, "");
 const apiVersion = process.env.SHOPIFY_API_VERSION || "2026-07";
 
-type FieldDefinition = {
-  key: string;
-  name: string;
-  type: string;
-  description?: string;
-  required?: boolean;
-  validations?: { name: string; value: string }[];
+const shopifyTypes: Record<CmsFieldType, string> = {
+  text: "single_line_text_field",
+  longText: "multi_line_text_field",
+  url: "url",
+  image: "file_reference",
+  images: "list.file_reference",
+  collection: "collection_reference",
+  collections: "list.collection_reference",
+  number: "number_integer",
+  textList: "list.single_line_text_field",
+  boolean: "boolean"
 };
 
-const image = [{ name: "file_type_options", value: JSON.stringify(["Image"]) }];
-const text = (key: string, name: string, description?: string): FieldDefinition => ({
-  key,
-  name,
-  type: "single_line_text_field",
-  description
-});
-const longText = (key: string, name: string, description?: string): FieldDefinition => ({
-  key,
-  name,
-  type: "multi_line_text_field",
-  description
-});
-const url = (key: string, name: string, description?: string): FieldDefinition => ({
-  key,
-  name,
-  type: "url",
-  description
-});
+const LEGACY_TYPES = ["site_settings", "content_block", "hero_slide"];
 
-const definitions: {
-  type: string;
-  name: string;
-  description: string;
-  displayNameKey?: string;
-  fields: FieldDefinition[];
-}[] = [
-  {
-    type: "site_settings",
-    name: "Site settings",
-    description: "Announcement bar, contact details, social links and homepage picks. Keep one entry.",
-    fields: [
-      text("announcement", "Announcement", "Top bar text"),
-      text("announcement_secondary", "Announcement (second line)", "Shown next to the announcement on larger screens"),
-      longText("tagline", "Footer tagline"),
-      text("footer_note", "Footer note", "e.g. Prices in PKR · Worldwide shipping"),
-      text("contact_email", "Contact email"),
-      text("contact_phone", "Contact phone"),
-      text("whatsapp_number", "WhatsApp number", "With country code, e.g. +92 300 1234567. Shows the WhatsApp chat button"),
-      longText("address", "Address"),
-      longText("business_hours", "Business hours"),
-      text("instagram_handle", "Instagram handle", "e.g. @kayra"),
-      url("instagram_url", "Instagram URL"),
-      url("facebook_url", "Facebook URL"),
-      url("tiktok_url", "TikTok URL"),
-      url("youtube_url", "YouTube URL"),
-      url("pinterest_url", "Pinterest URL"),
-      url("x_url", "X (Twitter) URL"),
-      url("snapchat_url", "Snapchat URL"),
-      url("whatsapp_url", "WhatsApp link", "Optional; the WhatsApp number above is enough"),
-      {
-        key: "instagram_images",
-        name: "Instagram images",
-        type: "list.file_reference",
-        validations: image
-      },
-      {
-        key: "featured_collections",
-        name: "Homepage featured collections",
-        type: "list.collection_reference"
-      },
-      {
-        key: "trending_collection",
-        name: "Homepage trending collection",
-        type: "collection_reference"
-      },
-      text("seo_title", "SEO title", "Browser tab and Google title for the homepage"),
-      longText("seo_description", "SEO description", "Google description for the homepage")
-    ]
-  },
-  {
-    type: "hero_slide",
-    name: "Hero slide",
-    description: "Homepage hero slider. One entry per slide.",
-    displayNameKey: "title",
-    fields: [
-      { key: "image", name: "Image", type: "file_reference", validations: image },
-      text("eyebrow", "Eyebrow", "Small line above the title"),
-      text("title", "Title"),
-      text("cta_label", "Button label"),
-      text("link", "Link", "A path like /collections/bridal or a full URL"),
-      { key: "position", name: "Position", type: "number_integer", description: "Lower numbers show first" }
-    ]
-  },
-  {
-    type: "content_block",
-    name: "Content block",
-    description:
-      "Editable text and images for each section of the website. Placement says where it shows (see README).",
-    displayNameKey: "placement",
-    fields: [
-      {
-        ...text("placement", "Placement", "Where this shows, e.g. home-statement or lookbook-chapter-4. Don't change it on existing entries."),
-        required: true
-      },
-      text("eyebrow", "Eyebrow", "Small line above the title"),
-      text("title", "Title"),
-      text("subtitle", "Subtitle"),
-      longText("body", "Text", "Leave a blank line between paragraphs"),
-      {
-        key: "images",
-        name: "Images",
-        type: "list.file_reference",
-        description: "The image alt text is used as the caption where captions show",
-        validations: image
-      },
-      text("cta_label", "Button label"),
-      text("cta_link", "Button link", "A path like /collections/bridal or a full URL"),
-      { key: "collection", name: "Collection", type: "collection_reference" },
-      { key: "position", name: "Position", type: "number_integer", description: "Order within a list, lower first" }
-    ]
-  }
-];
-
-const siteSettingsSeed: Record<string, string> = {
-  announcement: "Complimentary shipping nationwide",
-  tagline: "A cinematic South Asian luxury house — formal pret, bridal, and heirloom jewelry.",
-  footer_note: "Prices in PKR · Worldwide shipping",
-  instagram_handle: "@kayra"
-};
-
+// ---------------------------------------------------------------------------
+// Admin API
 // ---------------------------------------------------------------------------
 
 async function getAccessToken(): Promise<string> {
@@ -209,144 +109,372 @@ const check = (label: string, payload: UserErrors) => {
   }
 };
 
-async function ensureDefinition(definition: (typeof definitions)[number]) {
-  const { metaobjectDefinitionByType: existing } = await admin<{
-    metaobjectDefinitionByType: {
-      id: string;
-      fieldDefinitions: { key: string }[];
-      access: { storefront: string };
-    } | null;
-  }>(
+type ExistingDefinition = {
+  id: string;
+  fieldDefinitions: { key: string; type: { name: string } }[];
+};
+
+async function getDefinition(type: string): Promise<ExistingDefinition | null> {
+  const data = await admin<{ metaobjectDefinitionByType: ExistingDefinition | null }>(
     `query ($type: String!) {
       metaobjectDefinitionByType(type: $type) {
         id
-        fieldDefinitions { key }
-        access { storefront }
+        fieldDefinitions { key type { name } }
       }
     }`,
-    { type: definition.type }
+    { type }
   );
+  return data.metaobjectDefinitionByType;
+}
+
+type Entry = { handle: string; fields: { key: string; value: string | null }[] };
+
+async function getEntries(type: string): Promise<Entry[]> {
+  const data = await admin<{ metaobjects: { nodes: Entry[] } }>(
+    `query ($type: String!) {
+      metaobjects(type: $type, first: 250) {
+        nodes { handle fields { key value } }
+      }
+    }`,
+    { type }
+  );
+  return data.metaobjects.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// Definitions
+// ---------------------------------------------------------------------------
+
+const fieldInput = (field: CmsField) => ({
+  key: field.key,
+  name: field.name,
+  description: field.help ?? "",
+  type: shopifyTypes[field.type],
+  ...(field.type === "image" || field.type === "images"
+    ? { validations: [{ name: "file_type_options", value: JSON.stringify(["Image"]) }] }
+    : {})
+});
+
+async function ensureDefinition(definition: CmsDefinition) {
+  const existing = await getDefinition(definition.type);
 
   if (!existing) {
     const { metaobjectDefinitionCreate } = await admin<{ metaobjectDefinitionCreate: UserErrors }>(
       `mutation ($definition: MetaobjectDefinitionCreateInput!) {
-        metaobjectDefinitionCreate(definition: $definition) {
-          userErrors { field message }
-        }
+        metaobjectDefinitionCreate(definition: $definition) { userErrors { field message } }
       }`,
       {
         definition: {
           type: definition.type,
           name: definition.name,
-          description: definition.description,
-          displayNameKey: definition.displayNameKey,
+          description: definition.help,
+          displayNameKey: definition.displayField,
           access: { storefront: "PUBLIC_READ" },
-          fieldDefinitions: definition.fields
+          fieldDefinitions: definition.fields.map(fieldInput)
         }
       }
     );
-    check(`Creating ${definition.type}`, metaobjectDefinitionCreate);
-    console.log(`✓ Created "${definition.name}" (${definition.type})`);
+    check(`Creating ${definition.name}`, metaobjectDefinitionCreate);
+    console.log(`✓ Created  ${definition.name}`);
     return;
   }
 
-  const have = new Set(existing.fieldDefinitions.map((field) => field.key));
-  const missing = definition.fields.filter((field) => !have.has(field.key));
-  const needsAccess = existing.access.storefront !== "PUBLIC_READ";
-  if (!missing.length && !needsAccess) {
-    console.log(`✓ "${definition.name}" (${definition.type}) already complete`);
-    return;
+  // Keep names, help texts and field order in sync with cms.ts.
+  const have = new Map(existing.fieldDefinitions.map((field) => [field.key, field.type.name]));
+  for (const field of definition.fields) {
+    const type = have.get(field.key);
+    if (type && type !== shopifyTypes[field.type]) {
+      console.warn(`  ! ${definition.type}.${field.key} is "${type}", expected "${shopifyTypes[field.type]}"`);
+    }
   }
-
   const { metaobjectDefinitionUpdate } = await admin<{ metaobjectDefinitionUpdate: UserErrors }>(
     `mutation ($id: ID!, $definition: MetaobjectDefinitionUpdateInput!) {
-      metaobjectDefinitionUpdate(id: $id, definition: $definition) {
-        userErrors { field message }
-      }
+      metaobjectDefinitionUpdate(id: $id, definition: $definition) { userErrors { field message } }
     }`,
     {
       id: existing.id,
       definition: {
+        name: definition.name,
+        description: definition.help,
+        displayNameKey: definition.displayField,
         access: { storefront: "PUBLIC_READ" },
-        fieldDefinitions: missing.map((field) => ({ create: field }))
+        fieldDefinitions: definition.fields.map((field) =>
+          have.has(field.key)
+            ? { update: { key: field.key, name: field.name, description: field.help ?? "" } }
+            : { create: fieldInput(field) }
+        ),
+        resetFieldOrder: true
       }
     }
   );
-  check(`Updating ${definition.type}`, metaobjectDefinitionUpdate);
+  check(`Updating ${definition.name}`, metaobjectDefinitionUpdate);
+  const added = definition.fields.filter((field) => !have.has(field.key));
   console.log(
-    `✓ Updated "${definition.name}" (${definition.type})` +
-      (missing.length ? `: added ${missing.map((field) => field.key).join(", ")}` : "") +
-      (needsAccess ? " · turned on Storefront access" : "")
+    `✓ Updated  ${definition.name}` +
+      (added.length ? ` (added ${added.map((field) => field.key).join(", ")})` : "")
   );
 }
 
-async function existingEntries(type: string): Promise<{ handle: string; placement: string | null }[]> {
-  const data = await admin<{
-    metaobjects: { nodes: { handle: string; placement: { value: string } | null }[] };
-  }>(
-    `query ($type: String!) {
-      metaobjects(type: $type, first: 250) {
-        nodes { handle placement: field(key: "placement") { value } }
-      }
-    }`,
-    { type }
-  );
-  return data.metaobjects.nodes.map((node) => ({
-    handle: node.handle,
-    placement: node.placement?.value ?? null
-  }));
-}
+// ---------------------------------------------------------------------------
+// Starter values: website defaults, overridden by the old definitions' values
+// ---------------------------------------------------------------------------
 
-async function createEntry(type: string, handle: string, fields: Record<string, string>) {
-  const { metaobjectCreate } = await admin<{ metaobjectCreate: UserErrors }>(
-    `mutation ($metaobject: MetaobjectCreateInput!) {
-      metaobjectCreate(metaobject: $metaobject) {
-        userErrors { field message }
+type Values = Record<string, string>;
+/** type → entry handle → field key → value */
+const plan = new Map<string, Map<string, Values>>();
+
+const planEntry = (type: string, handle: string): Values => {
+  const entries = plan.get(type) ?? new Map<string, Values>();
+  plan.set(type, entries);
+  const values = entries.get(handle) ?? {};
+  entries.set(handle, values);
+  return values;
+};
+
+const REFERENCE_TYPES: CmsFieldType[] = ["image", "images", "collection", "collections"];
+
+const defaultFor = (field: CmsField, listKey?: string): string => {
+  if (REFERENCE_TYPES.includes(field.type)) {
+    return "";
+  }
+  const target = parseTarget(field.to);
+  let value: unknown;
+  if (target.kind === "block") {
+    value = defaultContentBlocks[target.block]?.[target.prop as keyof (typeof defaultContentBlocks)[string]];
+  } else if (target.kind === "item" && listKey) {
+    value = defaultContentBlocks[listKey]?.[target.prop as keyof (typeof defaultContentBlocks)[string]];
+  } else if (target.kind === "settings") {
+    value = (defaultSettingsText as Record<string, unknown>)[target.prop];
+  }
+  if (Array.isArray(value)) {
+    return field.type === "textList" ? JSON.stringify(value) : "";
+  }
+  return value === undefined || value === null ? "" : String(value);
+};
+
+function planDefaults() {
+  for (const definition of cmsDefinitions) {
+    if (definition.list) {
+      const keys = Object.keys(defaultContentBlocks).filter((key) =>
+        key.startsWith(`${definition.list}-`)
+      );
+      for (const key of keys) {
+        const values = planEntry(definition.type, key);
+        for (const field of definition.fields) {
+          values[field.key] = defaultFor(field, key);
+        }
       }
-    }`,
-    {
-      metaobject: {
-        type,
-        handle,
-        fields: Object.entries(fields)
-          .filter(([, value]) => value !== "")
-          .map(([key, value]) => ({ key, value }))
+    } else if (definition.entry) {
+      const values = planEntry(definition.type, definition.entry);
+      for (const field of definition.fields) {
+        values[field.key] = defaultFor(field);
       }
     }
-  );
-  check(`Creating ${type} "${handle}"`, metaobjectCreate);
+  }
 }
 
-async function seed() {
-  if (!(await existingEntries("site_settings")).length) {
-    await createEntry("site_settings", "site-settings", siteSettingsSeed);
-    console.log("✓ Added the Site settings entry");
-  }
-
-  const taken = new Set(
-    (await existingEntries("content_block")).flatMap((entry) => [entry.handle, entry.placement])
-  );
-  let added = 0;
-  for (const [placement, block] of Object.entries(defaultContentBlocks)) {
-    if (taken.has(placement)) {
+/** The single-entry field whose `to` is `target`. */
+const fieldFor = (target: string) => {
+  for (const definition of cmsDefinitions) {
+    if (definition.list || !definition.entry) {
       continue;
     }
-    // Images stay on the built-in photos until replaced in Shopify admin.
-    await createEntry("content_block", placement, {
-      placement,
-      eyebrow: block.eyebrow ?? "",
-      title: block.title ?? "",
-      subtitle: block.subtitle ?? "",
-      body: block.body ?? "",
-      cta_label: block.ctaLabel ?? "",
-      cta_link: block.ctaLink ?? "",
-      position: block.position ? String(block.position) : ""
-    });
-    added += 1;
+    const field = definition.fields.find((entry) => entry.to === target);
+    if (field) {
+      return { definition, field };
+    }
   }
-  console.log(
-    added ? `✓ Added ${added} content blocks` : "✓ All content blocks already exist"
+  return null;
+};
+
+/** Converts an old value to the new field's type (list of images → one image). */
+const convert = (value: string, type: CmsFieldType): string => {
+  if (type === "image" || type === "collection") {
+    if (value.startsWith("[")) {
+      try {
+        return String((JSON.parse(value) as string[])[0] ?? "");
+      } catch {
+        return "";
+      }
+    }
+  }
+  return value;
+};
+
+const setTarget = (target: string, value: string | null) => {
+  if (!value) {
+    return;
+  }
+  const match = fieldFor(target);
+  if (!match) {
+    return;
+  }
+  planEntry(match.definition.type, match.definition.entry!)[match.field.key] = convert(
+    value,
+    match.field.type
   );
+};
+
+const LEGACY_SETTINGS: Record<string, string> = {
+  tagline: "settings.tagline",
+  footer_note: "settings.footerNote",
+  contact_email: "settings.contactEmail",
+  contact_phone: "settings.contactPhone",
+  whatsapp_number: "settings.whatsappNumber",
+  address: "settings.address",
+  business_hours: "settings.businessHours",
+  instagram_handle: "settings.instagramHandle",
+  instagram_url: "settings.social.Instagram",
+  facebook_url: "settings.social.Facebook",
+  tiktok_url: "settings.social.TikTok",
+  youtube_url: "settings.social.YouTube",
+  pinterest_url: "settings.social.Pinterest",
+  x_url: "settings.social.X",
+  snapchat_url: "settings.social.Snapchat",
+  instagram_images: "settings.instagramImages",
+  featured_collections: "settings.featuredCollections",
+  trending_collection: "settings.trendingCollection",
+  seo_title: "settings.seoTitle",
+  seo_description: "settings.seoDescription"
+};
+
+const LEGACY_BLOCK_PROPS: Record<string, string> = {
+  eyebrow: "eyebrow",
+  title: "title",
+  subtitle: "subtitle",
+  body: "body",
+  images: "images",
+  cta_label: "ctaLabel",
+  cta_link: "ctaLink",
+  collection: "collection",
+  position: "position"
+};
+
+const LEGACY_SLIDE_FIELDS: Record<string, string> = {
+  image: "picture",
+  eyebrow: "small_text",
+  title: "title",
+  cta_label: "button_text",
+  link: "button_link",
+  position: "order"
+};
+
+const valueMap = (entry: Entry) =>
+  Object.fromEntries(entry.fields.map((field) => [field.key, field.value]));
+
+async function planLegacy(): Promise<Record<string, Entry[]>> {
+  const legacy: Record<string, Entry[]> = {};
+  for (const type of LEGACY_TYPES) {
+    if (await getDefinition(type)) {
+      legacy[type] = await getEntries(type);
+    }
+  }
+
+  const settings = legacy.site_settings?.[0];
+  if (settings) {
+    const values = valueMap(settings);
+    const messages = [values.announcement, values.announcement_secondary].filter(
+      (message): message is string => Boolean(message?.trim())
+    );
+    if (messages.length) {
+      setTarget("settings.announcements", JSON.stringify(messages));
+    }
+    for (const [key, target] of Object.entries(LEGACY_SETTINGS)) {
+      setTarget(target, values[key] ?? null);
+    }
+  }
+
+  for (const entry of legacy.content_block ?? []) {
+    const values = valueMap(entry);
+    const placement = values.placement || entry.handle;
+    const list = cmsDefinitions.find(
+      (definition) => definition.list && placement.startsWith(`${definition.list}-`)
+    );
+    for (const [key, prop] of Object.entries(LEGACY_BLOCK_PROPS)) {
+      const value = values[key];
+      if (!value) {
+        continue;
+      }
+      if (list) {
+        const field = list.fields.find((entryField) => entryField.to === `item.${prop}`);
+        if (field) {
+          planEntry(list.type, placement)[field.key] = convert(value, field.type);
+        }
+      } else {
+        setTarget(`${placement}.${prop}`, value);
+      }
+    }
+  }
+
+  for (const entry of legacy.hero_slide ?? []) {
+    const values = valueMap(entry);
+    const slide = planEntry("homepage_slide", entry.handle);
+    for (const [oldKey, newKey] of Object.entries(LEGACY_SLIDE_FIELDS)) {
+      if (values[oldKey]) {
+        slide[newKey] = values[oldKey]!;
+      }
+    }
+  }
+
+  return legacy;
+}
+
+// ---------------------------------------------------------------------------
+// Entries
+// ---------------------------------------------------------------------------
+
+async function createEntries(definition: CmsDefinition) {
+  if ((await getEntries(definition.type)).length) {
+    console.log(`  ${definition.name}: already has entries, left as they are`);
+    return;
+  }
+  const entries = plan.get(definition.type) ?? new Map<string, Values>();
+  for (const [handle, values] of entries) {
+    const { metaobjectCreate } = await admin<{ metaobjectCreate: UserErrors }>(
+      `mutation ($metaobject: MetaobjectCreateInput!) {
+        metaobjectCreate(metaobject: $metaobject) { userErrors { field message } }
+      }`,
+      {
+        metaobject: {
+          type: definition.type,
+          handle,
+          fields: Object.entries(values)
+            .filter(([, value]) => value !== "")
+            .map(([key, value]) => ({ key, value }))
+        }
+      }
+    );
+    check(`Filling ${definition.name}`, metaobjectCreate);
+  }
+  if (entries.size) {
+    console.log(`  ${definition.name}: filled in (${entries.size} ${entries.size === 1 ? "entry" : "entries"})`);
+  }
+}
+
+async function removeLegacy(legacy: Record<string, Entry[]>) {
+  const types = Object.keys(legacy);
+  if (!types.length) {
+    return;
+  }
+  mkdirSync("scripts/backups", { recursive: true });
+  const file = `scripts/backups/shopify-content-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  writeFileSync(file, JSON.stringify(legacy, null, 2));
+  console.log(`\nSaved the old entries to ${file}`);
+
+  for (const type of types) {
+    const definition = await getDefinition(type);
+    if (!definition) {
+      continue;
+    }
+    const { metaobjectDefinitionDelete } = await admin<{ metaobjectDefinitionDelete: UserErrors }>(
+      `mutation ($id: ID!) {
+        metaobjectDefinitionDelete(id: $id) { deletedId userErrors { field message } }
+      }`,
+      { id: definition.id }
+    );
+    check(`Removing old ${type}`, metaobjectDefinitionDelete);
+    console.log(`✓ Removed the old "${type}" section (its values were copied across)`);
+  }
 }
 
 async function main() {
@@ -355,10 +483,19 @@ async function main() {
   }
   accessToken = await getAccessToken();
   console.log(`Setting up ${domain}…\n`);
-  for (const definition of definitions) {
+
+  planDefaults();
+  const legacy = await planLegacy();
+
+  for (const definition of cmsDefinitions) {
     await ensureDefinition(definition);
   }
-  await seed();
+  console.log("");
+  for (const definition of cmsDefinitions) {
+    await createEntries(definition);
+  }
+  await removeLegacy(legacy);
+
   console.log("\nDone. Edit everything in Shopify admin → Content → Metaobjects.");
 }
 

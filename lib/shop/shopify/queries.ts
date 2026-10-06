@@ -1,5 +1,7 @@
 // GraphQL documents for the Shopify Storefront API.
 
+import { cmsDefinitions } from "../cms";
+
 const worldMetafield = `world: metafield(namespace: "custom", key: "world") { value }`;
 
 const productFields = /* GraphQL */ `
@@ -283,6 +285,21 @@ export const metaobjectsQuery = /* GraphQL */ `
     metaobjects(type: $type, first: $first) {
       nodes { ...MetaobjectFields }
     }
+  }
+  ${metaobjectFields}
+`;
+
+/** Every content metaobject type from lib/shop/cms.ts, aliased c0, c1, … */
+export const cmsQuery = /* GraphQL */ `
+  query Cms {
+    ${cmsDefinitions
+      .map(
+        (definition, index) =>
+          `c${index}: metaobjects(type: "${definition.type}", first: ${definition.list ? 50 : 1}) {
+      nodes { ...MetaobjectFields }
+    }`
+      )
+      .join("\n    ")}
   }
   ${metaobjectFields}
 `;

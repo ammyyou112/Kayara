@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { subscribeAction } from "@/app/actions/newsletter";
 
-export function Newsletter() {
+export function Newsletter({ title }: { title: string }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -28,7 +28,7 @@ export function Newsletter() {
         className="text-[10px] uppercase tracking-[0.32em] text-[var(--kayra-ivory)]/60"
         htmlFor="newsletter-email"
       >
-        The KAYRA List
+        {title}
       </label>
       <div className="mt-3 flex items-center border-b border-[var(--kayra-ivory)]/25 pb-2 focus-within:border-[var(--kayra-ivory)]/70">
         <input

@@ -3,12 +3,13 @@ import { shop } from "@/lib/shop";
 import { Newsletter } from "@/components/site/Newsletter";
 
 // Footer columns come from the Shopify "footer" menu (each top-level item is a
-// column heading, its children are the links). Tagline, socials and the
-// bottom note come from the site_settings metaobject.
+// column heading, its children are the links). Tagline, newsletter title and
+// bottom note come from the Footer metaobject; contact details and socials
+// from their own metaobjects.
 export async function SiteFooter() {
   const [menu, settings] = await Promise.all([shop.getMenu("footer"), shop.getSiteSettings()]);
 
-  // Contact details from site_settings; each line only shows once it is set.
+  // Contact details from Contact & WhatsApp; each line only shows once it is set.
   const contact = [
     settings.contactEmail && { label: settings.contactEmail, href: `mailto:${settings.contactEmail}` },
     settings.contactPhone && {
@@ -40,7 +41,7 @@ export async function SiteFooter() {
               </p>
             ) : null}
           </div>
-          <Newsletter />
+          <Newsletter title={settings.newsletterTitle} />
         </div>
 
         <div

@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { collectionHref, productHref } from "../format";
+import { cmsDefinitions, parseTarget, type CmsFieldType } from "./cms";
 import {
   defaultFooterMenu,
   defaultHeroSlides,
@@ -11,7 +13,6 @@ import type {
   Cart,
   Collection,
   ContentBlock,
-  HeroSlide,
   Image,
   MenuItem,
   Money,
@@ -20,6 +21,7 @@ import type {
   ProductSort,
   ShopAdapter,
   SiteSettings,
+  SocialLink,
   World
 } from "./types";
 
@@ -323,8 +325,6 @@ const toMenuItem = (raw: RawMenuItem): MenuItem => {
 const fieldMap = (metaobject: RawMetaobject) =>
   new Map(metaobject.fields.map((field) => [field.key, field]));
 
-const text = (fields: ReturnType<typeof fieldMap>, key: string): string =>
-  fields.get(key)?.value?.trim() ?? "";
 
 /** Content queries degrade to the defaults instead of breaking the page. */
 async function withFallback<T>(label: string, run: () => Promise<T | null>, fallback: T): Promise<T> {
@@ -368,6 +368,136 @@ const assertNoUserErrors = (payload: { userErrors: { message: string }[] }) => {
     throw new Error(payload.userErrors.map((error) => error.message).join("; "));
   }
 };
+
+// ---------------------------------------------------------------------------
+// Site content (metaobjects described in ./cms.ts)
+// ---------------------------------------------------------------------------
+
+type RawField = RawMetaobject["fields"][number];
+
+const emptyBlock = (key: string, list?: string): ContentBlock => ({
+  key,
+  list,
+  eyebrow: "",
+  title: "",
+  subtitle: "",
+  body: "",
+  images: [],
+  ctaLabel: "",
+  ctaLink: "",
+  collection: "",
+  position: 999
+});
+
+/** A metaobject field's value in the shape its `to` target expects. */
+const cmsValue = (field: RawField | undefined, type: CmsFieldType): unknown => {
+  if (!field) {
+    return undefined;
+  }
+  switch (type) {
+    case "image": {
+      const image = toImage(field.reference?.image ?? null, "");
+      return image ? [image] : undefined;
+    }
+    case "images":
+      return (field.references?.nodes ?? [])
+        .map((node) => toImage(node.image ?? null, ""))
+        .filter((image): image is Image => image !== null);
+    case "collection":
+      return field.reference?.handle;
+    case "collections":
+      return (field.references?.nodes ?? [])
+        .map((node) => node.handle)
+        .filter((handle): handle is string => Boolean(handle));
+    case "number":
+      return field.value ? Number(field.value) : undefined;
+    case "boolean":
+      return field.value == null ? undefined : field.value === "true";
+    case "textList":
+      try {
+        return (JSON.parse(field.value ?? "[]") as unknown[])
+          .map((entry) => String(entry).trim())
+          .filter(Boolean);
+      } catch {
+        return undefined;
+      }
+    default:
+      return field.value?.trim();
+  }
+};
+
+const isEmpty = (value: unknown) =>
+  value === undefined || value === null || value === "" || (Array.isArray(value) && !value.length);
+
+/**
+ * Reads every content metaobject in one request and maps each field to the
+ * page section or setting its `to` names. Empty fields keep the defaults.
+ */
+const loadCms = cache(async (): Promise<{ blocks: ContentBlock[]; settings: SiteSettings }> => {
+  const data = await withFallback<Record<string, Nodes<RawMetaobject>>>(
+    "site content metaobjects",
+    () => shopifyFetch(Q.cmsQuery),
+    {}
+  );
+
+  const sections = new Map<string, ContentBlock>();
+  const items: ContentBlock[] = [];
+  const settings: Record<string, unknown> = {};
+  const socials: SocialLink[] = [];
+
+  cmsDefinitions.forEach((definition, index) => {
+    const nodes = data[`c${index}`]?.nodes ?? [];
+    for (const node of definition.list ? nodes : nodes.slice(0, 1)) {
+      const fields = fieldMap(node);
+      const item = definition.list ? emptyBlock(node.handle, definition.list) : null;
+      for (const field of definition.fields) {
+        let value = cmsValue(fields.get(field.key), field.type);
+        if (isEmpty(value)) {
+          continue;
+        }
+        const target = parseTarget(field.to);
+        if (target.kind === "settings") {
+          settings[target.prop] = value;
+        } else if (target.kind === "social") {
+          socials.push({ label: target.label, href: String(value) });
+        } else {
+          if (target.prop === "ctaLink") {
+            value = toStorefrontPath(String(value));
+          }
+          const block =
+            target.kind === "item"
+              ? item
+              : (sections.get(target.block) ?? emptyBlock(target.block));
+          if (!block) {
+            continue;
+          }
+          (block as Record<string, unknown>)[target.prop] = value;
+          if (target.kind === "block") {
+            sections.set(target.block, block);
+          }
+        }
+      }
+      if (item) {
+        items.push(item);
+      }
+    }
+  });
+
+  const merged: SiteSettings = {
+    ...defaultSiteSettings,
+    ...(settings as Partial<SiteSettings>),
+    socials: socials.length ? socials : defaultSiteSettings.socials
+  };
+  merged.instagramUrl = socials.find((social) => social.label === "Instagram")?.href ?? "";
+  // "+92 300 1234567" → https://wa.me/923001234567
+  const digits = merged.whatsappNumber.replace(/\D/g, "");
+  merged.whatsappUrl = digits
+    ? `https://wa.me/${digits}` +
+      (merged.whatsappMessage ? `?text=${encodeURIComponent(merged.whatsappMessage)}` : "")
+    : "";
+
+  return { blocks: [...sections.values(), ...items], settings: merged };
+});
 
 // ---------------------------------------------------------------------------
 // Adapter
@@ -528,145 +658,26 @@ export const shopifyAdapter: ShopAdapter = {
   },
 
   async getSiteSettings() {
-    return withFallback<SiteSettings>(
-      "site_settings metaobject",
-      async () => {
-        const data = await shopifyFetch<{ metaobjects: Nodes<RawMetaobject> }>(
-          Q.metaobjectsQuery,
-          { type: "site_settings", first: 1 }
-        );
-        const entry = data.metaobjects.nodes[0];
-        if (!entry) {
-          return null;
-        }
-        const fields = fieldMap(entry);
-        const or = (key: string, fallback: string) => text(fields, key) || fallback;
-
-        const socials = (
-          [
-            ["Instagram", "instagram_url"],
-            ["Facebook", "facebook_url"],
-            ["TikTok", "tiktok_url"],
-            ["YouTube", "youtube_url"],
-            ["Pinterest", "pinterest_url"],
-            ["X", "x_url"],
-            ["Snapchat", "snapchat_url"],
-            ["WhatsApp", "whatsapp_url"]
-          ] as const
-        )
-          .map(([label, key]) => ({ label, href: text(fields, key) }))
-          .filter((social) => social.href);
-
-        const instagramImages = (fields.get("instagram_images")?.references?.nodes ?? [])
-          .map((node, i) => toImage(node.image ?? null, `KAYRA on Instagram ${i + 1}`))
-          .filter((image): image is Image => image !== null);
-
-        // "+92 300 1234567" → wa.me/923001234567
-        const whatsappDigits = text(fields, "whatsapp_number").replace(/\D/g, "");
-
-        const featuredCollections = (fields.get("featured_collections")?.references?.nodes ?? [])
-          .map((node) => node.handle)
-          .filter((handle): handle is string => Boolean(handle));
-
-        return {
-          announcement: or("announcement", defaultSiteSettings.announcement),
-          announcementSecondary: text(fields, "announcement_secondary"),
-          tagline: or("tagline", defaultSiteSettings.tagline),
-          footerNote: or("footer_note", defaultSiteSettings.footerNote),
-          socials,
-          instagramHandle: or("instagram_handle", defaultSiteSettings.instagramHandle),
-          instagramUrl: text(fields, "instagram_url"),
-          instagramImages: instagramImages.length
-            ? instagramImages
-            : defaultSiteSettings.instagramImages,
-          featuredCollections,
-          trendingCollection: fields.get("trending_collection")?.reference?.handle ?? "",
-          contactEmail: text(fields, "contact_email"),
-          contactPhone: text(fields, "contact_phone"),
-          whatsappUrl: whatsappDigits
-            ? `https://wa.me/${whatsappDigits}`
-            : text(fields, "whatsapp_url"),
-          whatsappNumber: text(fields, "whatsapp_number"),
-          address: text(fields, "address"),
-          businessHours: text(fields, "business_hours"),
-          seoTitle: text(fields, "seo_title"),
-          seoDescription: text(fields, "seo_description")
-        };
-      },
-      defaultSiteSettings
-    );
+    return (await loadCms()).settings;
   },
 
   async getHeroSlides() {
-    return withFallback<HeroSlide[]>(
-      "hero_slide metaobjects",
-      async () => {
-        const data = await shopifyFetch<{ metaobjects: Nodes<RawMetaobject> }>(
-          Q.metaobjectsQuery,
-          { type: "hero_slide", first: 12 }
-        );
-        const slides = data.metaobjects.nodes
-          .map((entry) => {
-            const fields = fieldMap(entry);
-            const image = toImage(fields.get("image")?.reference?.image ?? null, text(fields, "title"));
-            if (!image) {
-              return null;
-            }
-            return {
-              position: Number(text(fields, "position") || 999),
-              slide: {
-                id: entry.handle,
-                image,
-                href: toStorefrontPath(text(fields, "link") || "/shop"),
-                eyebrow: text(fields, "eyebrow"),
-                title: text(fields, "title"),
-                cta: text(fields, "cta_label") || "Shop now"
-              }
-            };
-          })
-          .filter((entry) => entry !== null)
-          .sort((a, b) => a.position - b.position)
-          .map((entry) => entry.slide);
-        return slides.length ? slides : null;
-      },
-      defaultHeroSlides
-    );
+    const slides = (await loadCms()).blocks
+      .filter((block) => block.list === "hero-slide" && block.images.length)
+      .sort((a, b) => a.position - b.position || a.key.localeCompare(b.key))
+      .map((block) => ({
+        id: block.key,
+        image: block.images[0],
+        href: block.ctaLink || "/shop",
+        eyebrow: block.eyebrow,
+        title: block.title,
+        cta: block.ctaLabel || "Shop now"
+      }));
+    return slides.length ? slides : defaultHeroSlides;
   },
 
   async getContentBlocks() {
-    return withFallback<ContentBlock[]>(
-      "content_block metaobjects",
-      async () => {
-        const data = await shopifyFetch<{ metaobjects: Nodes<RawMetaobject> }>(
-          Q.metaobjectsQuery,
-          { type: "content_block", first: 250 }
-        );
-        return data.metaobjects.nodes.map((entry) => {
-          const fields = fieldMap(entry);
-          const title = text(fields, "title");
-          const images = [
-            fields.get("image")?.reference,
-            ...(fields.get("images")?.references?.nodes ?? [])
-          ]
-            .map((node) => toImage(node?.image ?? null, title))
-            .filter((image): image is Image => image !== null);
-          const link = text(fields, "cta_link");
-          return {
-            key: text(fields, "placement") || entry.handle,
-            eyebrow: text(fields, "eyebrow"),
-            title,
-            subtitle: text(fields, "subtitle"),
-            body: text(fields, "body"),
-            images,
-            ctaLabel: text(fields, "cta_label"),
-            ctaLink: link ? toStorefrontPath(link) : "",
-            collection: fields.get("collection")?.reference?.handle ?? "",
-            position: Number(text(fields, "position") || 999)
-          };
-        });
-      },
-      []
-    );
+    return (await loadCms()).blocks;
   },
 
   async getPage(handle) {

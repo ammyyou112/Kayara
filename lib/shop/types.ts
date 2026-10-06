@@ -104,9 +104,12 @@ export type HeroSlide = {
 };
 
 export type SiteSettings = {
-  announcement: string;
-  announcementSecondary: string;
+  /** Announcement bar messages; empty hides the bar. */
+  announcements: string[];
+  /** Run the messages across the bar (marquee) instead of standing still. */
+  announcementScroll: boolean;
   tagline: string;
+  newsletterTitle: string;
   footerNote: string;
   socials: SocialLink[];
   instagramHandle: string;
@@ -118,9 +121,11 @@ export type SiteSettings = {
   trendingCollection: string;
   contactEmail: string;
   contactPhone: string;
-  /** wa.me link built from whatsapp_number (or whatsapp_url). Empty = no WhatsApp button. */
+  /** wa.me link built from the WhatsApp number. Empty = no WhatsApp button. */
   whatsappUrl: string;
   whatsappNumber: string;
+  /** Optional message pre-typed in WhatsApp. */
+  whatsappMessage: string;
   address: string;
   businessHours: string;
   seoTitle: string;
@@ -128,11 +133,14 @@ export type SiteSettings = {
 };
 
 /**
- * An editable section of the storefront (Shopify metaobject `content_block`).
- * `key` is the Placement field, e.g. "home-statement" or "lookbook-chapter-2".
+ * An editable section of the storefront, filled from the Shopify metaobjects
+ * described in lib/shop/cms.ts. `key` is the section (e.g. "home-statement");
+ * for list entries (slides, chapters…) it is the entry handle and `list` names
+ * the list (e.g. "lookbook-chapter").
  */
 export type ContentBlock = {
   key: string;
+  list?: string;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -146,7 +154,7 @@ export type ContentBlock = {
   position: number;
 };
 
-export type ContentBlockDefaults = Partial<Omit<ContentBlock, "key">>;
+export type ContentBlockDefaults = Partial<Omit<ContentBlock, "key" | "list">>;
 
 export type Page = {
   handle: string;
@@ -176,7 +184,7 @@ export type ShopAdapter = {
   getMenu(handle: string): Promise<MenuItem[] | null>;
   getSiteSettings(): Promise<SiteSettings>;
   getHeroSlides(): Promise<HeroSlide[]>;
-  /** Every content_block entry in Shopify (empty in mock mode). */
+  /** Page sections and list entries from Shopify (empty in mock mode). */
   getContentBlocks(): Promise<ContentBlock[]>;
   getPage(handle: string): Promise<Page | null>;
   getPolicy(handle: string): Promise<Page | null>;

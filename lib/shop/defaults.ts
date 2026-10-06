@@ -1,4 +1,5 @@
 import { unsplash } from "../images";
+import { defaultSettingsText } from "./content";
 import type { HeroSlide, MenuItem, Page, SiteSettings } from "./types";
 
 // Fallback content. The mock adapter serves these directly; the Shopify adapter
@@ -48,13 +49,8 @@ export const defaultFooterMenu: MenuItem[] = [
 ];
 
 export const defaultSiteSettings: SiteSettings = {
-  announcement: "Complimentary shipping nationwide",
-  announcementSecondary: "WhatsApp +92 317 0 KAYRA",
-  tagline:
-    "A cinematic South Asian luxury house — formal pret, bridal, and heirloom jewelry.",
-  footerNote: "Prices in PKR · Worldwide shipping",
+  ...defaultSettingsText,
   socials: [],
-  instagramHandle: "@kayra",
   instagramUrl: "",
   instagramImages: [
     "1502716119720-b23a93e5fe1b",
@@ -70,6 +66,7 @@ export const defaultSiteSettings: SiteSettings = {
   contactPhone: "",
   whatsappUrl: "",
   whatsappNumber: "",
+  whatsappMessage: "",
   address: "",
   businessHours: "",
   seoTitle: "",

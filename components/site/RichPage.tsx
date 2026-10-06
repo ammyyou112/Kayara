@@ -2,7 +2,7 @@ import type { Page, SiteSettings } from "@/lib/shop/types";
 
 /**
  * Plain editorial layout for Shopify Pages and store policies. On the contact
- * page, the contact details from site_settings are listed under the text.
+ * page, the contact details from Contact & WhatsApp are listed under the text.
  */
 export function RichPage({
   page,

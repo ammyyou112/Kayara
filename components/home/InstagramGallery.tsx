@@ -2,8 +2,8 @@ import { ArrowUpRight } from "lucide-react";
 import { Media } from "@/components/site/Media";
 import type { Image } from "@/lib/shop/types";
 
-// Images, handle and profile link come from the site_settings metaobject; the
-// headings from the "home-instagram" content block.
+// Images and @name come from the Homepage metaobject, the profile link from
+// Social media links.
 export function InstagramGallery({
   images,
   handle,

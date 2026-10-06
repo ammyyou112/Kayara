@@ -18,8 +18,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "http://localhost:3000";
 
-// Homepage title and description come from the site_settings metaobject
-// (seo_title / seo_description) when set.
+// Homepage title and description come from the Google search (SEO)
+// metaobject when set.
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await shop.getSiteSettings();
   const title = settings.seoTitle || "KAYRA | Fashion & Jewelry";

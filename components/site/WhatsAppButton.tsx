@@ -1,5 +1,5 @@
-// Floating WhatsApp chat button. Shown only when site_settings has a
-// whatsapp_number (or whatsapp_url) set in Shopify.
+// Floating WhatsApp chat button. Shown only when a WhatsApp number is set in
+// Shopify → Content → Metaobjects → Contact & WhatsApp.
 export function WhatsAppButton({ href }: { href: string }) {
   if (!href) {
     return null;

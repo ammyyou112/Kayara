@@ -1,16 +1,25 @@
 // Default text and imagery for every editable section of the storefront.
 //
-// Each entry matches a "Content block" metaobject in Shopify (type
-// `content_block`) whose Placement field equals the key below. Any field left
-// empty in Shopify falls back to the value here, so a section never renders
-// blank. `npm run shopify:setup` seeds Shopify with this text.
+// lib/shop/cms.ts maps the Shopify fields onto these section keys. Any field
+// left empty in Shopify falls back to the value here, so a section never
+// renders blank. `npm run shopify:setup` fills Shopify with this text.
 //
-// Keys ending in -1, -2 … are lists (e.g. lookbook-chapter-*): once any entry
-// with that prefix exists in Shopify, only the Shopify entries are shown.
+// Keys ending in -1, -2 … are list entries (about-value-*, lookbook-chapter-*):
+// once the list has any entry in Shopify, only the Shopify entries are shown.
 //
 // This file has no runtime imports so the setup script can load it directly.
 
-import type { ContentBlockDefaults } from "./types";
+import type { ContentBlockDefaults, SiteSettings } from "./types";
+
+/** Store-wide text defaults (the rest of SiteSettings is in defaults.ts). */
+export const defaultSettingsText = {
+  announcements: ["Complimentary shipping nationwide"],
+  announcementScroll: true,
+  tagline: "A cinematic South Asian luxury house — formal pret, bridal, and heirloom jewelry.",
+  newsletterTitle: "The KAYRA List",
+  footerNote: "Prices in PKR · Worldwide shipping",
+  instagramHandle: "@kayra"
+} satisfies Partial<SiteSettings>;
 
 const unsplash = (id: string, w = 1600): string =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;

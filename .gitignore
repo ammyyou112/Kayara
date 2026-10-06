@@ -8,3 +8,6 @@ dist/
 tsconfig.tsbuildinfo
 .env
 .env*.local
+
+# Shopify content backups made by npm run shopify:setup
+scripts/backups/
