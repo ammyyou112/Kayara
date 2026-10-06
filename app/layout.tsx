@@ -9,6 +9,8 @@ import { BrandLoader } from "@/components/site/BrandLoader";
 import { introScript } from "@/lib/intro";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { shop } from "@/lib/shop";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   ? process.env.NEXT_PUBLIC_SITE_URL
@@ -16,27 +18,38 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "http://localhost:3000";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "KAYRA | Fashion & Jewelry",
-    template: "%s | KAYRA"
-  },
-  description: "KAYRA is a cinematic South Asian luxury fashion and jewelry house.",
-  openGraph: {
-    title: "KAYRA | Fashion & Jewelry",
-    description:
-      "Editorial pret, bridal, wedding guest wear, and jewelry from the house of KAYRA.",
-    siteName: "KAYRA",
-    type: "website"
-  }
-};
+// Homepage title and description come from the site_settings metaobject
+// (seo_title / seo_description) when set.
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await shop.getSiteSettings();
+  const title = settings.seoTitle || "KAYRA | Fashion & Jewelry";
+  const description =
+    settings.seoDescription || "KAYRA is a cinematic South Asian luxury fashion and jewelry house.";
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: title,
+      template: "%s | KAYRA"
+    },
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: "KAYRA",
+      type: "website"
+    }
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#f5efe4"
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({
+  children
+}: Readonly<{ children: React.ReactNode }>) {
+  const settings = await shop.getSiteSettings();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -61,6 +74,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </div>
             </RouteTransition>
             <SiteFooter />
+            <WhatsAppButton href={settings.whatsappUrl} />
           </WishlistProvider>
         </CartProvider>
       </body>

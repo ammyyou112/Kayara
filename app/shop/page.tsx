@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { shop } from "@/lib/shop";
+import { getBlock } from "@/lib/shop/blocks";
 import type { ProductSort, World } from "@/lib/shop/types";
 import { ProductCard } from "@/components/shop/ProductCard";
 
@@ -45,17 +46,20 @@ export default async function ShopPage({
   const sort: ProductSort =
     sortOptions.find((option) => option.value === sortParam)?.value ?? "featured";
 
-  const products = await shop.getProducts({
-    world: world === "all" ? undefined : world,
-    sort
-  });
+  const [products, header] = await Promise.all([
+    shop.getProducts({
+      world: world === "all" ? undefined : world,
+      sort
+    }),
+    getBlock("shop-header")
+  ]);
   const title = world === "all" ? "Shop All" : world === "clothing" ? "Clothing" : "Jewelry";
 
   return (
     <main className="px-5 pb-24 md:px-8 xl:px-12">
       <header className="py-12 text-center md:py-20">
         <p className="mb-4 text-[11px] uppercase tracking-[0.45em] text-[var(--kayra-clay)]">
-          The Maison
+          {header.eyebrow}
         </p>
         <h1 className="font-display text-4xl uppercase tracking-[0.18em] sm:text-5xl md:text-7xl md:tracking-[0.22em]">
           {title}

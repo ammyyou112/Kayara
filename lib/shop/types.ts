@@ -116,7 +116,37 @@ export type SiteSettings = {
   featuredCollections: string[];
   /** Handle of the collection that powers "Trending Now". Empty = most expensive first. */
   trendingCollection: string;
+  contactEmail: string;
+  contactPhone: string;
+  /** wa.me link built from whatsapp_number (or whatsapp_url). Empty = no WhatsApp button. */
+  whatsappUrl: string;
+  whatsappNumber: string;
+  address: string;
+  businessHours: string;
+  seoTitle: string;
+  seoDescription: string;
 };
+
+/**
+ * An editable section of the storefront (Shopify metaobject `content_block`).
+ * `key` is the Placement field, e.g. "home-statement" or "lookbook-chapter-2".
+ */
+export type ContentBlock = {
+  key: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  /** Plain text; blank lines separate paragraphs. */
+  body: string;
+  images: Image[];
+  ctaLabel: string;
+  ctaLink: string;
+  /** Handle of a referenced collection. */
+  collection: string;
+  position: number;
+};
+
+export type ContentBlockDefaults = Partial<Omit<ContentBlock, "key">>;
 
 export type Page = {
   handle: string;
@@ -146,6 +176,8 @@ export type ShopAdapter = {
   getMenu(handle: string): Promise<MenuItem[] | null>;
   getSiteSettings(): Promise<SiteSettings>;
   getHeroSlides(): Promise<HeroSlide[]>;
+  /** Every content_block entry in Shopify (empty in mock mode). */
+  getContentBlocks(): Promise<ContentBlock[]>;
   getPage(handle: string): Promise<Page | null>;
   getPolicy(handle: string): Promise<Page | null>;
 };

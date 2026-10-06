@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { shop } from "@/lib/shop";
 import { collectionHref } from "@/lib/format";
-import { unsplash } from "@/lib/images";
+import { getBlockMap } from "@/lib/shop/blocks";
 import type { Collection, Product } from "@/lib/shop/types";
 import { Media } from "@/components/site/Media";
 import { PinnedSection } from "@/components/site/PinnedSection";
@@ -11,8 +11,6 @@ import { ProductCarousel } from "@/components/home/ProductCarousel";
 import { MagazineShowcase } from "@/components/home/MagazineShowcase";
 import { NewArrivals } from "@/components/home/NewArrivals";
 import { InstagramGallery } from "@/components/home/InstagramGallery";
-
-const statementImages = [unsplash("1483985988355-763728e1935b", 2200)];
 
 const pickFeatured = (collections: Collection[], handles: string[]): Collection[] => {
   if (!handles.length) {
@@ -24,12 +22,23 @@ const pickFeatured = (collections: Collection[], handles: string[]): Collection[
 };
 
 export default async function Home() {
-  const [slides, settings, collections, newest] = await Promise.all([
+  const [slides, settings, collections, newest, blocks] = await Promise.all([
     shop.getHeroSlides(),
     shop.getSiteSettings(),
     shop.getCollections(),
-    shop.getProducts({ sort: "newest" })
+    shop.getProducts({ sort: "newest" }),
+    getBlockMap([
+      "home-featured",
+      "home-trending",
+      "home-new-arrivals",
+      "home-editorial",
+      "home-editorial-story",
+      "home-editorial-quote",
+      "home-statement",
+      "home-instagram"
+    ])
   ]);
+  const { "home-featured": featuredBlock, "home-statement": statement } = blocks;
 
   const featured = pickFeatured(collections, settings.featuredCollections);
   const trending: Product[] = settings.trendingCollection
@@ -48,17 +57,17 @@ export default async function Home() {
           <div className="mb-7 flex items-end justify-between gap-4 px-5 md:mb-10 md:px-0">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--kayra-clay)]">
-                The House of KAYRA
+                {featuredBlock.eyebrow}
               </p>
               <h2 className="mt-2 font-display text-2xl uppercase leading-tight tracking-[0.1em] sm:text-3xl sm:tracking-[0.14em] md:text-5xl md:tracking-[0.18em]">
-                Featured Collections
+                {featuredBlock.title}
               </h2>
             </div>
             <Link
               className="magnetic-focus mb-1 inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-[10px] uppercase tracking-[0.26em] transition hover:opacity-60"
-              href="/shop"
+              href={featuredBlock.ctaLink || "/shop"}
             >
-              View all
+              {featuredBlock.ctaLabel}
               <ArrowUpRight size={14} strokeWidth={1.4} />
             </Link>
           </div>
@@ -106,27 +115,41 @@ export default async function Home() {
 
       {trending.length ? (
         <ProductCarousel
-          eyebrow="Most Wanted"
+          eyebrow={blocks["home-trending"].eyebrow}
           products={trending.slice(0, 12)}
-          title="Trending Now"
-          viewAllHref="/shop"
+          title={blocks["home-trending"].title}
+          viewAllHref={blocks["home-trending"].ctaLink || "/shop"}
         />
       ) : null}
 
-      {newest.length ? <NewArrivals products={newest.slice(0, 8)} /> : null}
+      {newest.length ? (
+        <NewArrivals
+          ctaHref={blocks["home-new-arrivals"].ctaLink}
+          ctaLabel={blocks["home-new-arrivals"].ctaLabel}
+          eyebrow={blocks["home-new-arrivals"].eyebrow}
+          products={newest.slice(0, 8)}
+          title={blocks["home-new-arrivals"].title}
+        />
+      ) : null}
 
-      <MagazineShowcase />
+      <MagazineShowcase
+        header={blocks["home-editorial"]}
+        quote={blocks["home-editorial-quote"].title}
+        story={blocks["home-editorial-story"]}
+      />
 
       <PinnedSection
-        copy="A cinematic South Asian house of pret, bridal, and heirloom jewelry — shaped slowly and finished by hand."
-        ctaHref="/about"
-        ctaLabel="Discover the House"
-        eyebrow="Est. Karachi"
-        images={statementImages}
-        title="We are KAYRA"
+        copy={statement.body}
+        ctaHref={statement.ctaLink}
+        ctaLabel={statement.ctaLabel}
+        eyebrow={statement.eyebrow}
+        images={statement.images.map((image) => image.url)}
+        title={statement.title}
       />
 
       <InstagramGallery
+        ctaLabel={blocks["home-instagram"].ctaLabel}
+        eyebrow={blocks["home-instagram"].eyebrow}
         handle={settings.instagramHandle}
         images={settings.instagramImages}
         url={settings.instagramUrl}

@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { shop } from "@/lib/shop";
 import { collectionHref, formatPriceRange, productHref } from "@/lib/format";
-import { jewel, unsplash } from "@/lib/images";
+import { unsplash } from "@/lib/images";
+import { getBlockMap, paragraphs } from "@/lib/shop/blocks";
 import { Media } from "@/components/site/Media";
 import { PinnedSection } from "@/components/site/PinnedSection";
 
@@ -20,27 +21,41 @@ const fallbackCategories = [
   { label: "Bangles", image: unsplash("1515562141207-7a88fb7ce338", 900) }
 ].map((category) => ({ ...category, href: "/shop?world=jewelry" }));
 
-const sliderImages = [
-  unsplash("1611591437281-460bfbe1220a", 2200),
-  unsplash("1515562141207-7a88fb7ce338", 2200),
-  unsplash("1602173574767-37ac01994b2a", 2200)
-];
-
-const statementImages = [unsplash("1539109136881-3be0616acf4b", 2200)];
-
 export default async function JewelryPage() {
-  const [products, collections] = await Promise.all([
+  const [products, collections, blocks] = await Promise.all([
     shop.getProducts({ world: "jewelry" }),
-    shop.getCollections("jewelry")
+    shop.getCollections("jewelry"),
+    getBlockMap([
+      "jewelry-cover",
+      "jewelry-letter",
+      "jewelry-categories",
+      "jewelry-slider",
+      "jewelry-feature",
+      "jewelry-edit",
+      "jewelry-quote",
+      "jewelry-statement",
+      "jewelry-closing"
+    ])
   ]);
-  // The cover story features the "heirloom" collection when it exists,
-  // otherwise the first jewelry collection.
+  const {
+    "jewelry-cover": cover,
+    "jewelry-feature": feature,
+    "jewelry-edit": edit,
+    "jewelry-quote": quote,
+    "jewelry-slider": slider,
+    "jewelry-statement": statement,
+    "jewelry-closing": closing
+  } = blocks;
+  // The cover story features the collection picked in the "jewelry-cover"
+  // content block, otherwise the first jewelry collection.
   const collection =
-    collections.find((entry) => entry.handle === "heirloom") ?? collections[0] ?? null;
+    collections.find((entry) => entry.handle === cover.collection) ?? collections[0] ?? null;
   const collectionLink = collection
     ? collectionHref(collection.world, collection.handle)
     : "/shop?world=jewelry";
-  const coverTitle = collection?.title ?? "Jewelry";
+  const coverTitle = cover.title || collection?.title || "Jewelry";
+  const coverImage = cover.images[0];
+  const featureImage = feature.images[0];
   const categories =
     collections.length >= 2
       ? collections.slice(0, 8).map((entry) => ({
@@ -56,7 +71,12 @@ export default async function JewelryPage() {
 
       {/* Magazine cover */}
       <section className="relative flex h-[66svh] min-h-[24rem] flex-col justify-between overflow-hidden md:h-[92vh] md:min-h-[36rem]">
-        <Media alt="KAYRA Jewelry — the Edit" priority sizes="100vw" src={jewel.cover} />
+        <Media
+          alt={coverImage?.altText ?? coverTitle}
+          priority
+          sizes="100vw"
+          src={coverImage?.url ?? ""}
+        />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,7,6,0.5),rgba(9,7,6,0.2)_45%,rgba(9,7,6,0.82))]"
@@ -64,12 +84,12 @@ export default async function JewelryPage() {
 
         <div className="relative z-10 flex items-start justify-between gap-6 px-6 pt-10 text-[10px] uppercase tracking-[0.3em] text-[var(--kayra-ivory)]/85 md:px-12 md:pt-16 md:tracking-[0.4em]">
           <span>KAYRA Jewelry</span>
-          <span className="text-right">Issue 01 · Ceremony 2026</span>
+          <span className="text-right">{cover.subtitle}</span>
         </div>
 
         <div className="relative z-10 px-6 pb-12 text-[var(--kayra-ivory)] md:px-12 md:pb-16">
           <p className="mb-4 text-[11px] uppercase tracking-[0.4em] text-[var(--kayra-gold-light)]">
-            The Jewelry Edit
+            {cover.eyebrow}
           </p>
           <h1 className="font-display text-5xl uppercase leading-[0.9] tracking-[0.08em] sm:text-7xl md:text-8xl md:tracking-[0.12em] xl:text-[10rem]">
             {coverTitle}
@@ -77,14 +97,16 @@ export default async function JewelryPage() {
           <div className="mt-8 flex flex-wrap items-center gap-6">
             <Link
               className="magnetic-focus inline-flex h-14 items-center gap-3 border border-[var(--kayra-ivory)]/50 px-8 text-[11px] uppercase tracking-[0.32em] transition duration-500 hover:bg-[var(--kayra-ivory)] hover:text-[var(--kayra-walnut)]"
-              href={collectionLink}
+              href={cover.ctaLink || collectionLink}
             >
-              Enter the Collection
+              {cover.ctaLabel}
               <ArrowUpRight size={16} strokeWidth={1.4} />
             </Link>
-            <span className="max-w-xs text-[10px] uppercase leading-6 tracking-[0.3em] text-[var(--kayra-ivory)]/80">
-              Gold, pearl & champagne — composed for the closest looking.
-            </span>
+            {cover.body ? (
+              <span className="max-w-xs text-[10px] uppercase leading-6 tracking-[0.3em] text-[var(--kayra-ivory)]/80">
+                {cover.body}
+              </span>
+            ) : null}
           </div>
         </div>
       </section>
@@ -92,24 +114,30 @@ export default async function JewelryPage() {
       {/* Editorial opening */}
       <section className="mx-auto max-w-4xl px-6 py-16 md:py-32">
         <p className="text-[11px] uppercase tracking-[0.5em] text-[var(--kayra-clay)]">
-          Editor&rsquo;s Letter
+          {blocks["jewelry-letter"].eyebrow}
         </p>
-        <p className="mt-8 font-display text-2xl leading-relaxed tracking-[0.04em] text-[var(--kayra-walnut)]/85 first-letter:float-left first-letter:mr-3 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.7] first-letter:text-[var(--kayra-clay)] md:text-3xl">
-          Jewelry is the most personal luxury — read slowly, at arm&rsquo;s length, in
-          the warmth of an occasion. This edit gathers the pieces meant to be
-          kept and passed on: a champagne glint at the ear, gold close at the
-          throat, a single pearl held in a quiet band.
-        </p>
+        {paragraphs(blocks["jewelry-letter"].body).map((paragraph, i) => (
+          <p
+            className={`mt-8 font-display text-2xl leading-relaxed tracking-[0.04em] text-[var(--kayra-walnut)]/85 md:text-3xl ${
+              i === 0
+                ? "first-letter:float-left first-letter:mr-3 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.7] first-letter:text-[var(--kayra-clay)]"
+                : ""
+            }`}
+            key={paragraph}
+          >
+            {paragraph}
+          </p>
+        ))}
       </section>
 
       {/* Shop by category */}
       <section className="px-5 py-16 md:px-8 md:py-20 xl:px-12">
         <div className="mb-8 text-center md:mb-10">
           <p className="text-[10px] uppercase tracking-[0.45em] text-[var(--kayra-clay)]">
-            Find your piece
+            {blocks["jewelry-categories"].eyebrow}
           </p>
           <h2 className="mt-2 font-display text-3xl uppercase tracking-[0.18em] md:text-5xl">
-            Shop by Category
+            {blocks["jewelry-categories"].title}
           </h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
@@ -142,34 +170,45 @@ export default async function JewelryPage() {
 
       {/* Fixed-background slider */}
       <PinnedSection
-        copy="Gold, pearl, and champagne — pieces made to be handed down."
-        eyebrow="The House of Heirloom"
-        images={sliderImages}
-        title="Worn close, kept for life"
+        copy={slider.body}
+        ctaHref={slider.ctaLink}
+        ctaLabel={slider.ctaLabel}
+        eyebrow={slider.eyebrow}
+        images={slider.images.map((image) => image.url)}
+        title={slider.title}
       />
 
       {/* Feature spread 01 */}
       <section className="grid items-stretch gap-px border-y border-[var(--kayra-walnut)]/15 lg:grid-cols-12">
         <div className="relative min-h-[36svh] lg:col-span-7 lg:min-h-[60vh]">
-          <Media alt="Champagne macro" sizes="(max-width: 1024px) 100vw, 58vw" src={jewel.macro} />
+          <Media
+            alt={featureImage?.altText ?? feature.title}
+            sizes="(max-width: 1024px) 100vw, 58vw"
+            src={featureImage?.url ?? ""}
+          />
         </div>
         <div className="flex items-center px-6 py-14 md:px-12 lg:col-span-5 lg:px-14 lg:py-16">
           <div className="max-w-md">
-            <p className="font-display text-6xl text-[var(--kayra-clay)]/30">01</p>
+            {feature.subtitle ? (
+              <p className="font-display text-6xl text-[var(--kayra-clay)]/30">{feature.subtitle}</p>
+            ) : null}
             <h2 className="mt-4 font-display text-3xl uppercase leading-tight tracking-[0.12em] sm:text-4xl md:text-5xl md:tracking-[0.14em]">
-              The Champagne Story
+              {feature.title}
             </h2>
-            <p className="mt-6 text-sm uppercase leading-7 tracking-[0.22em] text-[var(--kayra-walnut)]/60">
-              Warm gold and a restrained champagne tone, set for evening light.
-              Worn one piece at a time, never a crowd.
-            </p>
-            <Link
-              className="magnetic-focus mt-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.32em] text-[var(--kayra-clay)] transition hover:opacity-70"
-              href={collectionLink}
-            >
-              Read the chapter
-              <ArrowUpRight size={15} strokeWidth={1.4} />
-            </Link>
+            {feature.body ? (
+              <p className="mt-6 text-sm uppercase leading-7 tracking-[0.22em] text-[var(--kayra-walnut)]/60">
+                {feature.body}
+              </p>
+            ) : null}
+            {feature.ctaLabel ? (
+              <Link
+                className="magnetic-focus mt-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.32em] text-[var(--kayra-clay)] transition hover:opacity-70"
+                href={feature.ctaLink || collectionLink}
+              >
+                {feature.ctaLabel}
+                <ArrowUpRight size={15} strokeWidth={1.4} />
+              </Link>
+            ) : null}
           </div>
         </div>
       </section>
@@ -179,13 +218,13 @@ export default async function JewelryPage() {
       <section className="px-5 py-16 md:px-8 md:py-24 xl:px-12">
         <div className="mb-12 flex items-end justify-between gap-4 border-b border-[var(--kayra-walnut)]/15 pb-5">
           <h2 className="font-display text-4xl uppercase tracking-[0.18em] md:text-5xl">
-            The Edit
+            {edit.title}
           </h2>
           <Link
             className="magnetic-focus inline-flex shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-[var(--kayra-walnut)]/70 transition hover:text-[var(--kayra-walnut)] sm:text-[11px] sm:tracking-[0.3em]"
-            href="/shop?world=jewelry"
+            href={edit.ctaLink || "/shop?world=jewelry"}
           >
-            Shop all
+            {edit.ctaLabel}
             <ArrowUpRight size={15} strokeWidth={1.4} />
           </Link>
         </div>
@@ -250,38 +289,42 @@ export default async function JewelryPage() {
       ) : null}
 
       {/* Pull quote */}
-      <section className="bg-[var(--kayra-walnut)] px-6 py-20 text-center text-[var(--kayra-ivory)] md:py-36">
-        <p className="mx-auto max-w-4xl font-display text-2xl uppercase leading-tight tracking-[0.06em] sm:text-3xl md:text-5xl md:tracking-[0.08em]">
-          “The most personal luxury is the one you keep, and the one you pass on.”
-        </p>
-        <p className="mt-8 text-[11px] uppercase tracking-[0.4em] text-[var(--kayra-gold-light)]">
-          — The House of KAYRA
-        </p>
-      </section>
+      {quote.title ? (
+        <section className="bg-[var(--kayra-walnut)] px-6 py-20 text-center text-[var(--kayra-ivory)] md:py-36">
+          <p className="mx-auto max-w-4xl font-display text-2xl uppercase leading-tight tracking-[0.06em] sm:text-3xl md:text-5xl md:tracking-[0.08em]">
+            “{quote.title}”
+          </p>
+          {quote.subtitle ? (
+            <p className="mt-8 text-[11px] uppercase tracking-[0.4em] text-[var(--kayra-gold-light)]">
+              {quote.subtitle}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* We are KAYRA — fixed statement */}
       <PinnedSection
-        copy="A cinematic South Asian house of pret, bridal, and heirloom jewelry — shaped slowly and finished by hand."
-        ctaHref="/about"
-        ctaLabel="Discover the House"
-        eyebrow="Est. Karachi"
-        images={statementImages}
-        title="We are KAYRA"
+        copy={statement.body}
+        ctaHref={statement.ctaLink}
+        ctaLabel={statement.ctaLabel}
+        eyebrow={statement.eyebrow}
+        images={statement.images.map((image) => image.url)}
+        title={statement.title}
       />
 
       {/* Closing CTA */}
       <section className="px-5 py-20 text-center md:py-32">
         <p className="text-[11px] uppercase tracking-[0.5em] text-[var(--kayra-clay)]">
-          {collection?.parenthetical || "The Collection"}
+          {closing.eyebrow || collection?.parenthetical || "The Collection"}
         </p>
         <h2 className="mx-auto mt-5 max-w-4xl font-display text-4xl uppercase leading-tight tracking-[0.12em] sm:text-5xl md:text-7xl md:tracking-[0.16em]">
-          Shop the {coverTitle} Edit
+          {closing.title || `Shop the ${coverTitle} Edit`}
         </h2>
         <Link
           className="magnetic-focus mt-10 inline-flex h-14 items-center gap-3 border border-[var(--kayra-walnut)]/30 px-9 text-[11px] uppercase tracking-[0.32em] transition duration-500 hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
-          href={collectionLink}
+          href={closing.ctaLink || collectionLink}
         >
-          Enter the Collection
+          {closing.ctaLabel}
           <ArrowUpRight size={16} strokeWidth={1.4} />
         </Link>
       </section>

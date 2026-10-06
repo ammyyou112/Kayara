@@ -65,7 +65,15 @@ export const defaultSiteSettings: SiteSettings = {
     "1556905055-8f358a7a47b2"
   ].map((id, i) => ({ url: unsplash(id, 800), altText: `KAYRA on Instagram ${i + 1}` })),
   featuredCollections: [],
-  trendingCollection: ""
+  trendingCollection: "",
+  contactEmail: "",
+  contactPhone: "",
+  whatsappUrl: "",
+  whatsappNumber: "",
+  address: "",
+  businessHours: "",
+  seoTitle: "",
+  seoDescription: ""
 };
 
 export const defaultHeroSlides: HeroSlide[] = [

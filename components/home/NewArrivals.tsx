@@ -24,12 +24,16 @@ export function NewArrivals({
   products,
   showFilters = true,
   eyebrow = "Just In",
-  title = "New Arrivals"
+  title = "New Arrivals",
+  ctaLabel = "View all arrivals",
+  ctaHref = "/shop?sort=newest"
 }: {
   products: Product[];
   showFilters?: boolean;
   eyebrow?: string;
   title?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }) {
   const [filter, setFilter] = useState<"all" | World>("all");
   const reduce = useReducedMotion();
@@ -124,9 +128,9 @@ export function NewArrivals({
       <div className="mt-14 text-center">
         <Link
           className="magnetic-focus inline-flex items-center gap-3 border border-[var(--kayra-walnut)]/30 px-8 py-4 text-[11px] uppercase tracking-[0.32em] transition duration-500 hover:bg-[var(--kayra-walnut)] hover:text-[var(--kayra-ivory)]"
-          href="/shop?sort=newest"
+          href={ctaHref}
         >
-          View all arrivals
+          {ctaLabel}
           <ArrowUpRight size={15} strokeWidth={1.4} />
         </Link>
       </div>

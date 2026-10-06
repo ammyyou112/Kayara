@@ -10,6 +10,7 @@ import * as Q from "./shopify/queries";
 import type {
   Cart,
   Collection,
+  ContentBlock,
   HeroSlide,
   Image,
   MenuItem,
@@ -548,6 +549,8 @@ export const shopifyAdapter: ShopAdapter = {
             ["TikTok", "tiktok_url"],
             ["YouTube", "youtube_url"],
             ["Pinterest", "pinterest_url"],
+            ["X", "x_url"],
+            ["Snapchat", "snapchat_url"],
             ["WhatsApp", "whatsapp_url"]
           ] as const
         )
@@ -557,6 +560,9 @@ export const shopifyAdapter: ShopAdapter = {
         const instagramImages = (fields.get("instagram_images")?.references?.nodes ?? [])
           .map((node, i) => toImage(node.image ?? null, `KAYRA on Instagram ${i + 1}`))
           .filter((image): image is Image => image !== null);
+
+        // "+92 300 1234567" → wa.me/923001234567
+        const whatsappDigits = text(fields, "whatsapp_number").replace(/\D/g, "");
 
         const featuredCollections = (fields.get("featured_collections")?.references?.nodes ?? [])
           .map((node) => node.handle)
@@ -574,7 +580,17 @@ export const shopifyAdapter: ShopAdapter = {
             ? instagramImages
             : defaultSiteSettings.instagramImages,
           featuredCollections,
-          trendingCollection: fields.get("trending_collection")?.reference?.handle ?? ""
+          trendingCollection: fields.get("trending_collection")?.reference?.handle ?? "",
+          contactEmail: text(fields, "contact_email"),
+          contactPhone: text(fields, "contact_phone"),
+          whatsappUrl: whatsappDigits
+            ? `https://wa.me/${whatsappDigits}`
+            : text(fields, "whatsapp_url"),
+          whatsappNumber: text(fields, "whatsapp_number"),
+          address: text(fields, "address"),
+          businessHours: text(fields, "business_hours"),
+          seoTitle: text(fields, "seo_title"),
+          seoDescription: text(fields, "seo_description")
         };
       },
       defaultSiteSettings
@@ -614,6 +630,42 @@ export const shopifyAdapter: ShopAdapter = {
         return slides.length ? slides : null;
       },
       defaultHeroSlides
+    );
+  },
+
+  async getContentBlocks() {
+    return withFallback<ContentBlock[]>(
+      "content_block metaobjects",
+      async () => {
+        const data = await shopifyFetch<{ metaobjects: Nodes<RawMetaobject> }>(
+          Q.metaobjectsQuery,
+          { type: "content_block", first: 250 }
+        );
+        return data.metaobjects.nodes.map((entry) => {
+          const fields = fieldMap(entry);
+          const title = text(fields, "title");
+          const images = [
+            fields.get("image")?.reference,
+            ...(fields.get("images")?.references?.nodes ?? [])
+          ]
+            .map((node) => toImage(node?.image ?? null, title))
+            .filter((image): image is Image => image !== null);
+          const link = text(fields, "cta_link");
+          return {
+            key: text(fields, "placement") || entry.handle,
+            eyebrow: text(fields, "eyebrow"),
+            title,
+            subtitle: text(fields, "subtitle"),
+            body: text(fields, "body"),
+            images,
+            ctaLabel: text(fields, "cta_label"),
+            ctaLink: link ? toStorefrontPath(link) : "",
+            collection: fields.get("collection")?.reference?.handle ?? "",
+            position: Number(text(fields, "position") || 999)
+          };
+        });
+      },
+      []
     );
   },
 

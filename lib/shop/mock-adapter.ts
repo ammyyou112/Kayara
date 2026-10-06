@@ -194,6 +194,9 @@ export const mockShopAdapter: ShopAdapter = {
   async getHeroSlides() {
     return defaultHeroSlides;
   },
+  async getContentBlocks() {
+    return [];
+  },
   async getPage(handle) {
     return defaultPages[handle] ?? null;
   },

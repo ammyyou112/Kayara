@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { shop } from "@/lib/shop";
+import { getBlock, paragraphs } from "@/lib/shop/blocks";
 import { formatMoney, formatPriceRange, collectionHref, productHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import type { World } from "@/lib/shop/types";
@@ -23,10 +24,16 @@ export async function ProductView({ world, handle }: { world: World; handle: str
   }
 
   const t = themes[world];
-  const [collection, recommendations] = await Promise.all([
+  const [collection, recommendations, sizeGuide] = await Promise.all([
     product.collectionHandle ? shop.getCollection(product.collectionHandle) : null,
-    shop.getRecommendations(product)
+    shop.getRecommendations(product),
+    getBlock("size-guide")
   ]);
+  // The "size-guide" content block shows on any product with a Size option,
+  // once it has text or a chart image in Shopify.
+  const showSizeGuide =
+    product.options.some((option) => /size/i.test(option.name)) &&
+    Boolean(sizeGuide.body || sizeGuide.images.length);
   const backHref = collection
     ? collectionHref(collection.world, collection.handle)
     : world === "jewelry"
@@ -92,6 +99,34 @@ export async function ProductView({ world, handle }: { world: World; handle: str
             </p>
 
             <AddToBag product={product} />
+
+            {showSizeGuide ? (
+              <details className="group mt-8 max-w-lg border-y border-[var(--kayra-walnut)]/15">
+                <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-[11px] uppercase tracking-[0.3em] [&::-webkit-details-marker]:hidden">
+                  {sizeGuide.title}
+                  <span aria-hidden="true" className="text-base transition group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <div className={`pb-6 text-sm leading-7 ${t.muted}`}>
+                  {paragraphs(sizeGuide.body).map((paragraph) => (
+                    <p className="mb-3 whitespace-pre-line" key={paragraph}>
+                      {paragraph}
+                    </p>
+                  ))}
+                  {sizeGuide.images.map((image) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={image.altText}
+                      className="mt-3 w-full"
+                      key={image.url}
+                      loading="lazy"
+                      src={image.url}
+                    />
+                  ))}
+                </div>
+              </details>
+            ) : null}
 
             {product.descriptionHtml ? (
               <div

@@ -2,15 +2,20 @@ import { ArrowUpRight } from "lucide-react";
 import { Media } from "@/components/site/Media";
 import type { Image } from "@/lib/shop/types";
 
-// Images, handle and profile link come from the site_settings metaobject.
+// Images, handle and profile link come from the site_settings metaobject; the
+// headings from the "home-instagram" content block.
 export function InstagramGallery({
   images,
   handle,
-  url
+  url,
+  eyebrow,
+  ctaLabel
 }: {
   images: Image[];
   handle: string;
   url: string;
+  eyebrow: string;
+  ctaLabel: string;
 }) {
   if (!images.length) {
     return null;
@@ -22,7 +27,7 @@ export function InstagramGallery({
     <section className="px-5 py-16 md:px-8 md:py-24 xl:px-12">
       <div className="mb-10 text-center">
         <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--kayra-clay)]">
-          Follow the House
+          {eyebrow}
         </p>
         <h2 className="mt-3 font-display text-4xl uppercase tracking-[0.16em] md:text-6xl md:tracking-[0.2em]">
           {handle}
@@ -34,7 +39,7 @@ export function InstagramGallery({
             rel="noreferrer"
             target="_blank"
           >
-            Follow on Instagram
+            {ctaLabel}
             <ArrowUpRight size={15} strokeWidth={1.4} />
           </a>
         ) : null}

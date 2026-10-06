@@ -19,9 +19,15 @@ export async function generateMetadata({
 
 export default async function ShopifyPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
-  const page = await shop.getPage(handle);
+  const [page, settings] = await Promise.all([shop.getPage(handle), shop.getSiteSettings()]);
   if (!page) {
     notFound();
   }
-  return <RichPage eyebrow="The House" page={page} />;
+  return (
+    <RichPage
+      contact={handle === "contact" ? settings : undefined}
+      eyebrow="The House"
+      page={page}
+    />
+  );
 }

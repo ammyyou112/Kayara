@@ -8,6 +8,21 @@ import { Newsletter } from "@/components/site/Newsletter";
 export async function SiteFooter() {
   const [menu, settings] = await Promise.all([shop.getMenu("footer"), shop.getSiteSettings()]);
 
+  // Contact details from site_settings; each line only shows once it is set.
+  const contact = [
+    settings.contactEmail && { label: settings.contactEmail, href: `mailto:${settings.contactEmail}` },
+    settings.contactPhone && {
+      label: settings.contactPhone,
+      href: `tel:${settings.contactPhone.replace(/[^\d+]/g, "")}`
+    },
+    settings.whatsappUrl && {
+      label: settings.whatsappNumber ? `WhatsApp ${settings.whatsappNumber}` : "WhatsApp",
+      href: settings.whatsappUrl
+    },
+    settings.address && { label: settings.address, href: "" },
+    settings.businessHours && { label: settings.businessHours, href: "" }
+  ].filter((item): item is { label: string; href: string } => Boolean(item));
+
   // A footer menu built as a flat list (no children) becomes a single column.
   const columns = (menu ?? []).some((item) => item.items.length)
     ? (menu ?? []).filter((item) => item.items.length)
@@ -28,7 +43,11 @@ export async function SiteFooter() {
           <Newsletter />
         </div>
 
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-14 md:grid-cols-4">
+        <div
+          className={`grid grid-cols-2 gap-x-6 gap-y-10 py-14 ${
+            columns.length + (contact.length ? 1 : 0) > 4 ? "md:grid-cols-5" : "md:grid-cols-4"
+          }`}
+        >
           {columns.map((column) => (
             <div key={column.title}>
               <h3 className="text-[10px] uppercase tracking-[0.34em] text-[var(--kayra-ivory)]/50">
@@ -59,6 +78,30 @@ export async function SiteFooter() {
               </ul>
             </div>
           ))}
+          {contact.length ? (
+            <div>
+              <h3 className="text-[10px] uppercase tracking-[0.34em] text-[var(--kayra-ivory)]/50">
+                Contact
+              </h3>
+              <ul className="mt-5 space-y-3 text-[11px] uppercase leading-5 tracking-[0.2em]">
+                {contact.map((item) => (
+                  <li className="whitespace-pre-line break-words" key={item.label}>
+                    {item.href ? (
+                      <a
+                        className="magnetic-focus transition hover:text-[var(--kayra-gold-light)]"
+                        href={item.href}
+                        {...(item.href.startsWith("http") ? { rel: "noreferrer", target: "_blank" } : {})}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      item.label
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-col items-center justify-between gap-6 border-t border-[var(--kayra-ivory)]/15 pt-8 text-center text-[10px] uppercase tracking-[0.28em] text-[var(--kayra-ivory)]/55 lg:flex-row lg:text-left">
