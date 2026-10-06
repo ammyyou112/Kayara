@@ -202,10 +202,5 @@ export const defaultContentBlocks: Record<string, ContentBlockDefaults> = {
     position: 3
   },
 
-  // --- Product page ---------------------------------------------------------
-  // Shown as a "Size guide" panel on products with a Size option, once it has
-  // text or a chart image in Shopify. No default, so nothing invented shows.
-  "size-guide": {
-    title: "Size guide"
-  }
+  // Size charts have no defaults, so no invented measurements ever show.
 };

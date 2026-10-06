@@ -21,7 +21,13 @@ export type CmsFieldType =
   | "collections"
   | "number"
   | "textList"
-  | "boolean";
+  | "boolean"
+  /** One value picked from a dropdown. */
+  | "choice"
+  /** Several values picked from a dropdown. */
+  | "choices"
+  /** A dropdown of the entries of another metaobject (`refType`). */
+  | "metaobject";
 
 export type CmsField = {
   key: string;
@@ -29,6 +35,12 @@ export type CmsField = {
   type: CmsFieldType;
   to: string;
   help?: string;
+  /** Dropdown options for "choice"/"choices" fields. */
+  choices?: string[];
+  /** Fill the dropdown from the store when the setup script runs. */
+  choicesFrom?: "productTypes";
+  /** Metaobject type a "metaobject" field points to. */
+  refType?: string;
 };
 
 export type CmsDefinition = {
@@ -44,6 +56,13 @@ export type CmsDefinition = {
 };
 
 const KEEP_PHOTO = "Leave empty to keep the current photo.";
+
+/** Size dropdown options, in the order the size table lists them. */
+export const SIZE_CHOICES = [
+  "XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "Free size",
+  "0", "2", "4", "6", "8", "10", "12", "14", "16", "18", "20", "22", "24",
+  "26", "28", "30", "32", "34", "36", "38", "40", "42", "44", "46"
+];
 
 /** Columns of the size table, in order. Columns nobody filled in are hidden. */
 export const sizeChartColumns = [
@@ -429,53 +448,69 @@ export const cmsDefinitions: CmsDefinition[] = [
     ]
   },
   {
-    type: "size_guide",
-    name: "📏 Size guide",
-    help: "The “Size guide” button on products that have a Size option. The sizes themselves are added in “Size guide — sizes”.",
-    entry: "size-guide",
+    type: "size_chart",
+    name: "📏 Size charts",
+    help: "One entry = one size chart, e.g. “Kurta sizes”. Add its sizes in “Size chart — sizes”. Products show the chart picked for their product type.",
+    list: "size-chart",
+    displayField: "name",
     fields: [
-      { key: "title", name: "Button title", type: "text", to: "size-guide.title", help: "e.g. Size guide" },
+      { key: "name", name: "Chart name", type: "text", to: "item.title", help: "e.g. Kurta sizes" },
+      {
+        key: "product_types",
+        name: "Use for these product types",
+        type: "choices",
+        choicesFrom: "productTypes",
+        to: "item.tags",
+        help: "Pick one or more. Leave empty to use this chart for every product that has sizes but no other chart."
+      },
       {
         key: "unit",
         name: "Measurements are in",
-        type: "text",
-        to: "size-guide.subtitle",
-        help: "e.g. inches or cm. Shown above the size table."
+        type: "choice",
+        choices: ["inches", "cm"],
+        to: "item.subtitle"
       },
       {
-        key: "text",
+        key: "tips",
         name: "How to measure (optional)",
         type: "longText",
-        to: "size-guide.body",
-        help: "Any tips shown under the table, e.g. Measure around the fullest part of the chest."
+        to: "item.body",
+        help: "Tips shown under the table, e.g. Measure around the fullest part of the chest."
       },
       {
-        key: "chart",
+        key: "picture",
         name: "Size chart picture (optional)",
         type: "images",
-        to: "size-guide.images",
-        help: "Only if you already have a size chart as an image. Otherwise just add sizes in “Size guide — sizes”."
+        to: "item.images",
+        help: "Only if you already have the chart as an image."
       }
     ]
   },
   {
-    type: "size_chart_row",
-    name: "📏 Size guide — sizes",
-    help: "One entry = one size (one row of the size table). Example: Size = M, Bust / Chest = 38, Waist = 32, Order = 3. Leave a measurement empty if you don't use it.",
+    type: "size_chart_size",
+    name: "📏 Size chart — sizes",
+    help: "One entry = one size in a chart. Pick the chart, pick the size, type the measurements. Sizes sort themselves (XS, S, M, L…).",
     list: "size-row",
     displayField: "size",
     fields: [
-      { key: "size", name: "Size", type: "text", to: "item.title", help: "e.g. XS, S, M, L, XL or 8, 10, 12" },
+      {
+        key: "chart",
+        name: "Size chart",
+        type: "metaobject",
+        refType: "size_chart",
+        to: "item.parent",
+        help: "Which chart this size belongs to."
+      },
+      { key: "size", name: "Size", type: "choice", choices: SIZE_CHOICES, to: "item.title" },
       ...sizeChartColumns.map(
         (column): CmsField => ({
           key: column.key,
           name: column.label,
           type: "text",
           to: `item.cells.${column.key}`,
-          help: "Just the number, e.g. 36"
+          help: "Just the number, e.g. 36. Leave empty if you don't use it."
         })
-      ),
-      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 = top row, then 2, 3…" }
+      )
     ]
   },
   {

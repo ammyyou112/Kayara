@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { shop } from "@/lib/shop";
-import { getBlock, getBlockList, paragraphs } from "@/lib/shop/blocks";
-import { sizeChartColumns } from "@/lib/shop/cms";
+import { getBlockList, paragraphs } from "@/lib/shop/blocks";
+import { SIZE_CHOICES, sizeChartColumns } from "@/lib/shop/cms";
 import { formatMoney, formatPriceRange, collectionHref, productHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import type { World } from "@/lib/shop/types";
@@ -25,19 +25,33 @@ export async function ProductView({ world, handle }: { world: World; handle: str
   }
 
   const t = themes[world];
-  const [collection, recommendations, sizeGuide, sizeRows] = await Promise.all([
+  const [collection, recommendations, sizeCharts, sizes] = await Promise.all([
     product.collectionHandle ? shop.getCollection(product.collectionHandle) : null,
     shop.getRecommendations(product),
-    getBlock("size-guide"),
+    getBlockList("size-chart"),
     getBlockList("size-row")
   ]);
-  // Shopify → Metaobjects → "Size guide" and "Size guide — sizes". Shown on
-  // any product with a Size option once there are sizes, tips or a chart.
+  // Shopify → Metaobjects → "Size charts" and "Size chart — sizes". The chart
+  // picked for this product type wins; a chart with no types is the default.
+  const productType = product.productType?.trim().toLowerCase() ?? "";
+  const sizeGuide =
+    sizeCharts.find((chart) => chart.tags?.some((type) => type.toLowerCase() === productType)) ??
+    sizeCharts.find((chart) => !chart.tags?.length);
+  const sizeOrder = (size: string) => {
+    const index = SIZE_CHOICES.indexOf(size);
+    return index === -1 ? SIZE_CHOICES.length : index;
+  };
+  const sizeRows = sizeGuide
+    ? sizes
+        .filter((row) => row.parent === sizeGuide.key)
+        .sort((a, b) => sizeOrder(a.title) - sizeOrder(b.title))
+    : [];
   const sizeColumns = sizeChartColumns.filter((column) =>
     sizeRows.some((row) => row.cells?.[column.key])
   );
   const showSizeGuide =
     product.options.some((option) => /size/i.test(option.name)) &&
+    sizeGuide !== undefined &&
     Boolean(sizeRows.length || sizeGuide.body || sizeGuide.images.length);
   const backHref = collection
     ? collectionHref(collection.world, collection.handle)
@@ -105,10 +119,10 @@ export async function ProductView({ world, handle }: { world: World; handle: str
 
             <AddToBag product={product} />
 
-            {showSizeGuide ? (
+            {showSizeGuide && sizeGuide ? (
               <details className="group mt-8 max-w-lg border-y border-[var(--kayra-walnut)]/15">
                 <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-[11px] uppercase tracking-[0.3em] [&::-webkit-details-marker]:hidden">
-                  {sizeGuide.title}
+                  Size guide
                   <span aria-hidden="true" className="text-base transition group-open:rotate-45">
                     +
                   </span>

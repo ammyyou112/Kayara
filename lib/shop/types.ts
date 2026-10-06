@@ -29,6 +29,8 @@ export type Product = {
   handle: string;
   title: string;
   world: World;
+  /** Shopify product type, e.g. "Kurta" (picks the size chart). */
+  productType?: string;
   /** Primary collection, used for breadcrumbs and "more from" rails. */
   collectionHandle: string;
   description: string;
@@ -154,6 +156,10 @@ export type ContentBlock = {
   position: number;
   /** Extra named values, e.g. size table measurements. */
   cells?: Record<string, string>;
+  /** Picked dropdown values, e.g. the product types a size chart is for. */
+  tags?: string[];
+  /** Handle of the entry this one belongs to, e.g. a size's chart. */
+  parent?: string;
 };
 
 export type ContentBlockDefaults = Partial<Omit<ContentBlock, "key" | "list">>;

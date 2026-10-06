@@ -44,10 +44,15 @@ const shopifyTypes: Record<CmsFieldType, string> = {
   collections: "list.collection_reference",
   number: "number_integer",
   textList: "list.single_line_text_field",
-  boolean: "boolean"
+  boolean: "boolean",
+  choice: "single_line_text_field",
+  choices: "list.single_line_text_field",
+  metaobject: "metaobject_reference"
 };
 
-const LEGACY_TYPES = ["site_settings", "content_block", "hero_slide"];
+// Older content definitions. Their values are copied into the new sections
+// (where they map), backed up, and the definitions removed.
+const LEGACY_TYPES = ["site_settings", "content_block", "hero_slide", "size_guide", "size_chart_row"];
 
 // ---------------------------------------------------------------------------
 // Admin API
@@ -141,18 +146,69 @@ async function getEntries(type: string): Promise<Entry[]> {
   return data.metaobjects.nodes;
 }
 
+/** Every product type used in the store, for the size chart dropdown. */
+async function getProductTypes(): Promise<string[]> {
+  const token =
+    process.env.SHOPIFY_STOREFRONT_PRIVATE_TOKEN || process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+  if (!token) {
+    console.log(
+      "  (No Storefront token in .env.local, so “Use for these product types” will be a text box\n" +
+        "   instead of a dropdown. Add SHOPIFY_STOREFRONT_PRIVATE_TOKEN and run this again.)\n"
+    );
+    return [];
+  }
+  const response = await fetch(`https://${domain}/api/${apiVersion}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.SHOPIFY_STOREFRONT_PRIVATE_TOKEN
+        ? { "Shopify-Storefront-Private-Token": token }
+        : { "X-Shopify-Storefront-Access-Token": token })
+    },
+    body: JSON.stringify({ query: "{ productTypes(first: 250) { edges { node } } }" })
+  });
+  const json = (await response.json().catch(() => ({}))) as {
+    data?: { productTypes: { edges: { node: string }[] } };
+  };
+  const types = (json.data?.productTypes.edges ?? [])
+    .map((edge) => edge.node.trim())
+    .filter(Boolean);
+  if (!types.length) {
+    console.log("  (No product types found yet. Set a Type on your products and run this again.)\n");
+  }
+  return types;
+}
+
 // ---------------------------------------------------------------------------
 // Definitions
 // ---------------------------------------------------------------------------
 
-const fieldInput = (field: CmsField) => ({
+let productTypes: string[] = [];
+
+const validationsFor = async (field: CmsField) => {
+  if (field.type === "image" || field.type === "images") {
+    return [{ name: "file_type_options", value: JSON.stringify(["Image"]) }];
+  }
+  if (field.type === "choice" || field.type === "choices") {
+    const choices = field.choicesFrom === "productTypes" ? productTypes : (field.choices ?? []);
+    return choices.length ? [{ name: "choices", value: JSON.stringify(choices) }] : [];
+  }
+  if (field.type === "metaobject" && field.refType) {
+    const target = await getDefinition(field.refType);
+    if (!target) {
+      throw new Error(`${field.key} points to "${field.refType}", which does not exist yet`);
+    }
+    return [{ name: "metaobject_definition_id", value: target.id }];
+  }
+  return [];
+};
+
+const fieldInput = async (field: CmsField) => ({
   key: field.key,
   name: field.name,
   description: field.help ?? "",
   type: shopifyTypes[field.type],
-  ...(field.type === "image" || field.type === "images"
-    ? { validations: [{ name: "file_type_options", value: JSON.stringify(["Image"]) }] }
-    : {})
+  validations: await validationsFor(field)
 });
 
 async function ensureDefinition(definition: CmsDefinition) {
@@ -170,7 +226,7 @@ async function ensureDefinition(definition: CmsDefinition) {
           description: definition.help,
           displayNameKey: definition.displayField,
           access: { storefront: "PUBLIC_READ" },
-          fieldDefinitions: definition.fields.map(fieldInput)
+          fieldDefinitions: await Promise.all(definition.fields.map(fieldInput))
         }
       }
     );
@@ -198,10 +254,22 @@ async function ensureDefinition(definition: CmsDefinition) {
         description: definition.help,
         displayNameKey: definition.displayField,
         access: { storefront: "PUBLIC_READ" },
-        fieldDefinitions: definition.fields.map((field) =>
-          have.has(field.key)
-            ? { update: { key: field.key, name: field.name, description: field.help ?? "" } }
-            : { create: fieldInput(field) }
+        fieldDefinitions: await Promise.all(
+          definition.fields.map(async (field) =>
+            have.has(field.key)
+              ? {
+                  update: {
+                    key: field.key,
+                    name: field.name,
+                    description: field.help ?? "",
+                    // Refreshes dropdown options (e.g. new product types).
+                    ...(field.type === "choice" || field.type === "choices"
+                      ? { validations: await validationsFor(field) }
+                      : {})
+                  }
+                }
+              : { create: await fieldInput(field) }
+          )
         ),
         resetFieldOrder: true
       }
@@ -231,7 +299,15 @@ const planEntry = (type: string, handle: string): Values => {
   return values;
 };
 
-const REFERENCE_TYPES: CmsFieldType[] = ["image", "images", "collection", "collections"];
+const REFERENCE_TYPES: CmsFieldType[] = [
+  "image",
+  "images",
+  "collection",
+  "collections",
+  "metaobject",
+  "choice",
+  "choices"
+];
 
 const defaultFor = (field: CmsField, listKey?: string): string => {
   if (REFERENCE_TYPES.includes(field.type)) {
@@ -483,6 +559,7 @@ async function main() {
   }
   accessToken = await getAccessToken();
   console.log(`Setting up ${domain}…\n`);
+  productTypes = await getProductTypes();
 
   planDefaults();
   const legacy = await planLegacy();

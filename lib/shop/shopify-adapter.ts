@@ -175,6 +175,7 @@ const toProduct = (raw: RawProduct): Product => {
     handle: raw.handle,
     title: raw.title,
     world: worldOf(raw),
+    productType: raw.productType,
     collectionHandle:
       raw.collections.nodes.find((collection) => !IGNORED_COLLECTIONS.has(collection.handle))
         ?.handle ?? "",
@@ -404,6 +405,7 @@ const cmsValue = (field: RawField | undefined, type: CmsFieldType): unknown => {
         .map((node) => toImage(node.image ?? null, ""))
         .filter((image): image is Image => image !== null);
     case "collection":
+    case "metaobject":
       return field.reference?.handle;
     case "collections":
       return (field.references?.nodes ?? [])
@@ -414,6 +416,7 @@ const cmsValue = (field: RawField | undefined, type: CmsFieldType): unknown => {
     case "boolean":
       return field.value == null ? undefined : field.value === "true";
     case "textList":
+    case "choices":
       try {
         return (JSON.parse(field.value ?? "[]") as unknown[])
           .map((entry) => String(entry).trim())

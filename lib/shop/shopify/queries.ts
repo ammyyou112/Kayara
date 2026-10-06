@@ -269,6 +269,7 @@ const metaobjectFields = /* GraphQL */ `
       reference {
         ... on MediaImage { image { url altText } }
         ... on Collection { handle }
+        ... on Metaobject { handle }
       }
       references(first: 24) {
         nodes {

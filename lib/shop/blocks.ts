@@ -21,7 +21,9 @@ const withDefaults = (key: string, block?: ContentBlock): ContentBlock => {
     ctaLink: block?.ctaLink || fallback.ctaLink || "",
     collection: block?.collection || fallback.collection || "",
     position: block && block.position !== 999 ? block.position : (fallback.position ?? 999),
-    cells: block?.cells ?? fallback.cells ?? {}
+    cells: block?.cells ?? fallback.cells ?? {},
+    tags: block?.tags ?? fallback.tags ?? [],
+    parent: block?.parent ?? fallback.parent
   };
 };
 
