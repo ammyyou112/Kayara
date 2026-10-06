@@ -44,6 +44,16 @@ export type CmsDefinition = {
 };
 
 const KEEP_PHOTO = "Leave empty to keep the current photo.";
+
+/** Columns of the size table, in order. Columns nobody filled in are hidden. */
+export const sizeChartColumns = [
+  { key: "bust", label: "Bust / Chest" },
+  { key: "waist", label: "Waist" },
+  { key: "hips", label: "Hips" },
+  { key: "shoulder", label: "Shoulder" },
+  { key: "sleeve", label: "Sleeve" },
+  { key: "length", label: "Length" }
+] as const;
 const LINK_HELP = "Where the button goes, e.g. /shop or /collections/bridal";
 
 type Part = "smallText" | "title" | "text" | "buttonText" | "buttonLink" | "picture" | "pictures";
@@ -421,12 +431,51 @@ export const cmsDefinitions: CmsDefinition[] = [
   {
     type: "size_guide",
     name: "📏 Size guide",
-    help: "Shows as “Size guide” on every product that has a Size option, once it has text or a chart.",
+    help: "The “Size guide” button on products that have a Size option. The sizes themselves are added in “Size guide — sizes”.",
     entry: "size-guide",
     fields: [
-      { key: "title", name: "Title", type: "text", to: "size-guide.title" },
-      { key: "text", name: "Text", type: "longText", to: "size-guide.body" },
-      { key: "chart", name: "Size chart pictures", type: "images", to: "size-guide.images" }
+      { key: "title", name: "Button title", type: "text", to: "size-guide.title", help: "e.g. Size guide" },
+      {
+        key: "unit",
+        name: "Measurements are in",
+        type: "text",
+        to: "size-guide.subtitle",
+        help: "e.g. inches or cm. Shown above the size table."
+      },
+      {
+        key: "text",
+        name: "How to measure (optional)",
+        type: "longText",
+        to: "size-guide.body",
+        help: "Any tips shown under the table, e.g. Measure around the fullest part of the chest."
+      },
+      {
+        key: "chart",
+        name: "Size chart picture (optional)",
+        type: "images",
+        to: "size-guide.images",
+        help: "Only if you already have a size chart as an image. Otherwise just add sizes in “Size guide — sizes”."
+      }
+    ]
+  },
+  {
+    type: "size_chart_row",
+    name: "📏 Size guide — sizes",
+    help: "One entry = one size (one row of the size table). Example: Size = M, Bust / Chest = 38, Waist = 32, Order = 3. Leave a measurement empty if you don't use it.",
+    list: "size-row",
+    displayField: "size",
+    fields: [
+      { key: "size", name: "Size", type: "text", to: "item.title", help: "e.g. XS, S, M, L, XL or 8, 10, 12" },
+      ...sizeChartColumns.map(
+        (column): CmsField => ({
+          key: column.key,
+          name: column.label,
+          type: "text",
+          to: `item.cells.${column.key}`,
+          help: "Just the number, e.g. 36"
+        })
+      ),
+      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 = top row, then 2, 3…" }
     ]
   },
   {

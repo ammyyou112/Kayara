@@ -152,6 +152,8 @@ export type ContentBlock = {
   /** Handle of a referenced collection. */
   collection: string;
   position: number;
+  /** Extra named values, e.g. size table measurements. */
+  cells?: Record<string, string>;
 };
 
 export type ContentBlockDefaults = Partial<Omit<ContentBlock, "key" | "list">>;

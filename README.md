@@ -61,7 +61,7 @@ The sections, their fields and where each field shows on the site are defined in
 | Big pictures at the top of the homepage | Metaobjects → 🖼️ **Homepage slider** (one entry per slide) |
 | All other homepage text and pictures | Metaobjects → 🏠 **Homepage** (fields numbered top to bottom) |
 | Shop / Jewelry / About / Lookbook pages | Metaobjects → 🛍️ **Shop page**, 💎 **Jewelry page**, 📖 **About page** + ⭐ **values**, 📸 **Lookbook page** + **chapters** |
-| Size guide on products | Metaobjects → 📏 **Size guide** (shows on products with a Size option) |
+| Size guide on products | Metaobjects → 📏 **Size guide — sizes** (one entry per size: S, M, L… with its measurements; the site builds the table) and 📏 **Size guide** (title, inches/cm, tips). Shows on products with a Size option |
 | Google title and description | Metaobjects → 🔍 **Google search (SEO)** |
 | Products, prices, sizes/colours, stock | Products (sizes and colours are variants) |
 | Clothing vs Jewelry | Product **type** or a **tag** containing "jewelry"; optional metafield `custom.world` |

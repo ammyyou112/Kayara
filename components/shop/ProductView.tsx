@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { shop } from "@/lib/shop";
-import { getBlock, paragraphs } from "@/lib/shop/blocks";
+import { getBlock, getBlockList, paragraphs } from "@/lib/shop/blocks";
+import { sizeChartColumns } from "@/lib/shop/cms";
 import { formatMoney, formatPriceRange, collectionHref, productHref } from "@/lib/format";
 import { themes } from "@/lib/theme";
 import type { World } from "@/lib/shop/types";
@@ -24,16 +25,20 @@ export async function ProductView({ world, handle }: { world: World; handle: str
   }
 
   const t = themes[world];
-  const [collection, recommendations, sizeGuide] = await Promise.all([
+  const [collection, recommendations, sizeGuide, sizeRows] = await Promise.all([
     product.collectionHandle ? shop.getCollection(product.collectionHandle) : null,
     shop.getRecommendations(product),
-    getBlock("size-guide")
+    getBlock("size-guide"),
+    getBlockList("size-row")
   ]);
-  // The "size-guide" content block shows on any product with a Size option,
-  // once it has text or a chart image in Shopify.
+  // Shopify → Metaobjects → "Size guide" and "Size guide — sizes". Shown on
+  // any product with a Size option once there are sizes, tips or a chart.
+  const sizeColumns = sizeChartColumns.filter((column) =>
+    sizeRows.some((row) => row.cells?.[column.key])
+  );
   const showSizeGuide =
     product.options.some((option) => /size/i.test(option.name)) &&
-    Boolean(sizeGuide.body || sizeGuide.images.length);
+    Boolean(sizeRows.length || sizeGuide.body || sizeGuide.images.length);
   const backHref = collection
     ? collectionHref(collection.world, collection.handle)
     : world === "jewelry"
@@ -109,6 +114,41 @@ export async function ProductView({ world, handle }: { world: World; handle: str
                   </span>
                 </summary>
                 <div className={`pb-6 text-sm leading-7 ${t.muted}`}>
+                  {sizeRows.length ? (
+                    <div className="mb-4 overflow-x-auto">
+                      {sizeGuide.subtitle ? (
+                        <p className="mb-2 text-[10px] uppercase tracking-[0.24em]">
+                          Measurements in {sizeGuide.subtitle}
+                        </p>
+                      ) : null}
+                      <table className="w-full min-w-max border-collapse text-left text-[12px]">
+                        <thead>
+                          <tr className="border-b border-[var(--kayra-walnut)]/20 text-[10px] uppercase tracking-[0.16em]">
+                            <th className="py-2 pr-4 font-normal">Size</th>
+                            {sizeColumns.map((column) => (
+                              <th className="py-2 pr-4 font-normal" key={column.key}>
+                                {column.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sizeRows.map((row) => (
+                            <tr className="border-b border-[var(--kayra-walnut)]/10" key={row.key}>
+                              <th className="py-2 pr-4 font-medium text-[var(--kayra-walnut)]" scope="row">
+                                {row.title}
+                              </th>
+                              {sizeColumns.map((column) => (
+                                <td className="py-2 pr-4" key={column.key}>
+                                  {row.cells?.[column.key] || "—"}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
                   {paragraphs(sizeGuide.body).map((paragraph) => (
                     <p className="mb-3 whitespace-pre-line" key={paragraph}>
                       {paragraph}

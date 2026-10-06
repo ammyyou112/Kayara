@@ -471,6 +471,10 @@ const loadCms = cache(async (): Promise<{ blocks: ContentBlock[]; settings: Site
           if (!block) {
             continue;
           }
+          if (target.prop.startsWith("cells.")) {
+            block.cells = { ...block.cells, [target.prop.slice(6)]: String(value) };
+            continue;
+          }
           (block as Record<string, unknown>)[target.prop] = value;
           if (target.kind === "block") {
             sections.set(target.block, block);

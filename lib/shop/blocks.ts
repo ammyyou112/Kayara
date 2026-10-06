@@ -20,7 +20,8 @@ const withDefaults = (key: string, block?: ContentBlock): ContentBlock => {
     ctaLabel: block?.ctaLabel || fallback.ctaLabel || "",
     ctaLink: block?.ctaLink || fallback.ctaLink || "",
     collection: block?.collection || fallback.collection || "",
-    position: block && block.position !== 999 ? block.position : (fallback.position ?? 999)
+    position: block && block.position !== 999 ? block.position : (fallback.position ?? 999),
+    cells: block?.cells ?? fallback.cells ?? {}
   };
 };
 
