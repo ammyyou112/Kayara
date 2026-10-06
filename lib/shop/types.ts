@@ -31,6 +31,10 @@ export type Product = {
   world: World;
   /** Shopify product type, e.g. "Kurta" (picks the size chart). */
   productType?: string;
+  /** Handle of the size chart picked on the product (metafield custom.size_chart). */
+  sizeChart?: string;
+  /** Optional badge text (metafield custom.badge). */
+  badge?: string;
   /** Primary collection, used for breadcrumbs and "more from" rails. */
   collectionHandle: string;
   description: string;
@@ -113,6 +117,8 @@ export type SiteSettings = {
   tagline: string;
   newsletterTitle: string;
   footerNote: string;
+  /** Name in the "© year NAME" line. */
+  copyright: string;
   socials: SocialLink[];
   instagramHandle: string;
   instagramUrl: string;
@@ -196,4 +202,6 @@ export type ShopAdapter = {
   getContentBlocks(): Promise<ContentBlock[]>;
   getPage(handle: string): Promise<Page | null>;
   getPolicy(handle: string): Promise<Page | null>;
+  /** Policies that have text in Shopify (Settings → Policies). */
+  getPolicies(): Promise<{ title: string; handle: string }[]>;
 };

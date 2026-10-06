@@ -42,6 +42,10 @@ const productFields = /* GraphQL */ `
     }
     seo { title description }
     ${worldMetafield}
+    sizeChart: metafield(namespace: "custom", key: "size_chart") {
+      reference { ... on Metaobject { handle } }
+    }
+    badge: metafield(namespace: "custom", key: "badge") { value }
   }
 `;
 

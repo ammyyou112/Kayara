@@ -17,7 +17,11 @@ export function compareAtFor(product: Product) {
 }
 
 export function ProductBadge({ product, fallback }: { product: Product; fallback?: string }) {
-  const label = !product.availableForSale ? "Sold out" : compareAtFor(product) ? "Sale" : fallback;
+  const label = !product.availableForSale
+    ? "Sold out"
+    : compareAtFor(product)
+      ? "Sale"
+      : (product.badge ?? fallback);
   return label ? (
     <span className="pointer-events-none absolute left-2 top-2 z-10 bg-[var(--kayra-ivory)]/90 px-2 py-1 text-[8px] uppercase tracking-[0.28em] text-[var(--kayra-walnut)]">
       {label}

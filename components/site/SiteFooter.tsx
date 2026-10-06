@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { shop } from "@/lib/shop";
+import { getBlockList } from "@/lib/shop/blocks";
 import { Newsletter } from "@/components/site/Newsletter";
 
-// Footer columns come from the Shopify "footer" menu (each top-level item is a
-// column heading, its children are the links). Tagline, newsletter title and
-// bottom note come from the Footer metaobject; contact details and socials
-// from their own metaobjects.
+// Shopify → Content → Metaobjects: "Footer — columns" and "Footer — links"
+// for the link columns, "Footer" for the text, plus Contact & WhatsApp and
+// Social media links. Policies with text in Settings → Policies are listed
+// automatically.
 export async function SiteFooter() {
-  const [menu, settings] = await Promise.all([shop.getMenu("footer"), shop.getSiteSettings()]);
+  const [columnBlocks, linkBlocks, policies, settings] = await Promise.all([
+    getBlockList("footer-column"),
+    getBlockList("footer-link"),
+    shop.getPolicies(),
+    shop.getSiteSettings()
+  ]);
 
   // Contact details from Contact & WhatsApp; each line only shows once it is set.
   const contact = [
@@ -24,10 +30,14 @@ export async function SiteFooter() {
     settings.businessHours && { label: settings.businessHours, href: "" }
   ].filter((item): item is { label: string; href: string } => Boolean(item));
 
-  // A footer menu built as a flat list (no children) becomes a single column.
-  const columns = (menu ?? []).some((item) => item.items.length)
-    ? (menu ?? []).filter((item) => item.items.length)
-    : [{ title: "Explore", href: "", items: menu ?? [] }];
+  const columns = columnBlocks
+    .map((column) => ({
+      title: column.title,
+      items: linkBlocks
+        .filter((link) => link.parent === column.key && link.title)
+        .map((link) => ({ title: link.title, href: link.ctaLink || "/" }))
+    }))
+    .filter((column) => column.title && column.items.length);
 
   return (
     <footer className="bg-[var(--kayra-walnut)] text-[var(--kayra-ivory)]" id="newsletter">
@@ -106,7 +116,23 @@ export async function SiteFooter() {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-6 border-t border-[var(--kayra-ivory)]/15 pt-8 text-center text-[10px] uppercase tracking-[0.28em] text-[var(--kayra-ivory)]/55 lg:flex-row lg:text-left">
-          <p>© {new Date().getFullYear()} KAYRA. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {settings.copyright}. All rights reserved.
+          </p>
+          {policies.length ? (
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+              {policies.map((policy) => (
+                <li key={policy.handle}>
+                  <Link
+                    className="transition hover:text-[var(--kayra-gold-light)]"
+                    href={`/policies/${policy.handle}`}
+                  >
+                    {policy.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {settings.socials.length ? (
             <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
               {settings.socials.map((social) => (

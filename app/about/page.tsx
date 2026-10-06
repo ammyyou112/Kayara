@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { shop } from "@/lib/shop";
 import { getBlockList, getBlockMap, paragraphs } from "@/lib/shop/blocks";
 import { Media } from "@/components/site/Media";
 
@@ -12,11 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  // The story uses Shopify admin → Pages → "About" (handle: about) when it
-  // exists, otherwise the "about-story" content block. Everything else comes
-  // from the about-* content blocks.
-  const [page, blocks, values] = await Promise.all([
-    shop.getPage("about"),
+  // Shopify → Metaobjects: "About page" and "About page — values".
+  const [blocks, values] = await Promise.all([
     getBlockMap(["about-hero", "about-story", "about-atelier"]),
     getBlockList("about-value")
   ]);
@@ -51,21 +47,14 @@ export default async function AboutPage() {
 
       {/* Story */}
       <section className="mx-auto max-w-3xl px-6 py-16 text-center md:py-28">
-        {page?.body ? (
-          <div
-            className="rte text-base uppercase leading-9 tracking-[0.14em] text-[var(--kayra-walnut)]/80 md:text-lg"
-            dangerouslySetInnerHTML={{ __html: page.body }}
-          />
-        ) : (
-          paragraphs(blocks["about-story"].body).map((paragraph) => (
-            <p
-              className="mt-6 text-sm uppercase leading-8 tracking-[0.14em] text-[var(--kayra-walnut)]/80 first:mt-0 sm:text-base sm:leading-9 md:text-lg md:tracking-[0.18em]"
-              key={paragraph}
-            >
-              {paragraph}
-            </p>
-          ))
-        )}
+        {paragraphs(blocks["about-story"].body).map((paragraph) => (
+          <p
+            className="mt-6 text-sm uppercase leading-8 tracking-[0.14em] text-[var(--kayra-walnut)]/80 first:mt-0 sm:text-base sm:leading-9 md:text-lg md:tracking-[0.18em]"
+            key={paragraph}
+          >
+            {paragraph}
+          </p>
+        ))}
       </section>
 
       {/* Values */}

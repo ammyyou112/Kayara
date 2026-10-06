@@ -18,6 +18,7 @@ export const defaultSettingsText = {
   tagline: "A cinematic South Asian luxury house — formal pret, bridal, and heirloom jewelry.",
   newsletterTitle: "The KAYRA List",
   footerNote: "Prices in PKR · Worldwide shipping",
+  copyright: "KAYRA",
   instagramHandle: "@kayra"
 } satisfies Partial<SiteSettings>;
 
@@ -34,7 +35,40 @@ const statement: ContentBlockDefaults = {
   ctaLink: "/about"
 };
 
+const menuItem = (position: number, title: string, ctaLink: string): ContentBlockDefaults => ({
+  title,
+  ctaLink,
+  position
+});
+
+const footerLink = (
+  column: string,
+  position: number,
+  title: string,
+  ctaLink: string
+): ContentBlockDefaults => ({ parent: column, title, ctaLink, position });
+
 export const defaultContentBlocks: Record<string, ContentBlockDefaults> = {
+  // --- Header menu (dropdown links: menu-link-*, parent = a menu-item key) ----
+  "menu-item-1": menuItem(1, "Clothing", "/shop?world=clothing"),
+  "menu-item-2": menuItem(2, "Jewelry", "/jewelry"),
+  "menu-item-3": menuItem(3, "Shop All", "/shop"),
+  "menu-item-4": menuItem(4, "Lookbook", "/lookbook"),
+  "menu-item-5": menuItem(5, "About", "/about"),
+
+  // --- Footer columns and links ----------------------------------------------
+  "footer-column-1": { title: "Shop", position: 1 },
+  "footer-column-2": { title: "The House", position: 2 },
+  "footer-column-3": { title: "Client Care", position: 3 },
+  "footer-link-1": footerLink("footer-column-1", 1, "Shop All", "/shop"),
+  "footer-link-2": footerLink("footer-column-1", 2, "Clothing", "/shop?world=clothing"),
+  "footer-link-3": footerLink("footer-column-1", 3, "Jewelry", "/jewelry"),
+  "footer-link-4": footerLink("footer-column-1", 4, "Search", "/search"),
+  "footer-link-5": footerLink("footer-column-2", 1, "About", "/about"),
+  "footer-link-6": footerLink("footer-column-2", 2, "Lookbook", "/lookbook"),
+  "footer-link-7": footerLink("footer-column-2", 3, "Wishlist", "/wishlist"),
+  "footer-link-8": footerLink("footer-column-3", 1, "Contact", "/pages/contact"),
+
   // --- Homepage -------------------------------------------------------------
   "home-featured": {
     eyebrow: "The House of KAYRA",
@@ -181,7 +215,7 @@ export const defaultContentBlocks: Record<string, ContentBlockDefaults> = {
     title: "Candlelight",
     body: "Ivory drape and clay light, cut for the warm formal evening.",
     ctaLabel: "Shop the chapter",
-    ctaLink: "/clothing/collections/luxe-pret",
+    ctaLink: "/shop?world=clothing",
     images: [img("1612817159949-195b6eb9e31a", "Candlelight", 1600)],
     position: 1
   },
@@ -189,7 +223,7 @@ export const defaultContentBlocks: Record<string, ContentBlockDefaults> = {
     title: "The Vow",
     body: "Architectural bridal forms, softened by hand at every seam.",
     ctaLabel: "Shop the chapter",
-    ctaLink: "/clothing/collections/bridal",
+    ctaLink: "/shop?world=clothing",
     images: [img("1573408301185-9146fe634ad0", "The Vow", 1600)],
     position: 2
   },
@@ -197,7 +231,7 @@ export const defaultContentBlocks: Record<string, ContentBlockDefaults> = {
     title: "Held Breath",
     body: "Gold, pearl, and champagne composed for the closest looking.",
     ctaLabel: "Shop the chapter",
-    ctaLink: "/jewelry/collections/heirloom",
+    ctaLink: "/jewelry",
     images: [img("1617038220319-276d3cfab638", "Held Breath", 1600)],
     position: 3
   },

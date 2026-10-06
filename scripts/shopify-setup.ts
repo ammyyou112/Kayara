@@ -21,6 +21,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import {
   cmsDefinitions,
+  cmsMetafields,
   parseTarget,
   type CmsDefinition,
   type CmsField,
@@ -108,6 +109,24 @@ async function admin<T>(query: string, variables: Record<string, unknown> = {}):
 
 type UserErrors = { userErrors: { field: string[] | null; message: string }[] };
 
+/** Steps skipped because the app is missing an access scope. */
+const missingScopes = new Set<string>();
+
+/** Runs a step; an "Access denied" error just records the missing scope. */
+async function optional<T>(label: string, scope: string, run: () => Promise<T>): Promise<T | null> {
+  try {
+    return await run();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/access denied|ACCESS_DENIED|scope|cannot create a webhook subscription with the specified topic/i.test(message)) {
+      missingScopes.add(scope);
+      console.log(`  – skipped ${label} (the app needs the ${scope} permission)`);
+      return null;
+    }
+    throw error;
+  }
+}
+
 const check = (label: string, payload: UserErrors) => {
   if (payload.userErrors.length) {
     throw new Error(`${label}: ${payload.userErrors.map((error) => error.message).join("; ")}`);
@@ -132,13 +151,13 @@ async function getDefinition(type: string): Promise<ExistingDefinition | null> {
   return data.metaobjectDefinitionByType;
 }
 
-type Entry = { handle: string; fields: { key: string; value: string | null }[] };
+type Entry = { id: string; handle: string; fields: { key: string; value: string | null }[] };
 
 async function getEntries(type: string): Promise<Entry[]> {
   const data = await admin<{ metaobjects: { nodes: Entry[] } }>(
     `query ($type: String!) {
       metaobjects(type: $type, first: 250) {
-        nodes { handle fields { key value } }
+        nodes { id handle fields { key value } }
       }
     }`,
     { type }
@@ -148,6 +167,36 @@ async function getEntries(type: string): Promise<Entry[]> {
 
 /** Every product type used in the store, for the size chart dropdown. */
 async function getProductTypes(): Promise<string[]> {
+  const fromAdmin = await optional("reading product types", "read_products", async () => {
+    const types = new Set<string>();
+    let after: string | null = null;
+    for (let page = 0; page < 20; page += 1) {
+      const data: {
+        products: { nodes: { productType: string }[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
+      } = await admin(
+        `query ($after: String) {
+          products(first: 250, after: $after) {
+            nodes { productType }
+            pageInfo { hasNextPage endCursor }
+          }
+        }`,
+        { after }
+      );
+      data.products.nodes.forEach((product) => product.productType.trim() && types.add(product.productType.trim()));
+      if (!data.products.pageInfo.hasNextPage) {
+        break;
+      }
+      after = data.products.pageInfo.endCursor;
+    }
+    return [...types].sort();
+  });
+  if (fromAdmin) {
+    if (!fromAdmin.length) {
+      console.log("  (No product types yet. Set a Type on your products and run this again.)\n");
+    }
+    return fromAdmin;
+  }
+
   const token =
     process.env.SHOPIFY_STOREFRONT_PRIVATE_TOKEN || process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
   if (!token) {
@@ -211,7 +260,7 @@ const fieldInput = async (field: CmsField) => ({
   validations: await validationsFor(field)
 });
 
-async function ensureDefinition(definition: CmsDefinition) {
+async function ensureDefinition(definition: CmsDefinition): Promise<string[]> {
   const existing = await getDefinition(definition.type);
 
   if (!existing) {
@@ -232,7 +281,7 @@ async function ensureDefinition(definition: CmsDefinition) {
     );
     check(`Creating ${definition.name}`, metaobjectDefinitionCreate);
     console.log(`✓ Created  ${definition.name}`);
-    return;
+    return [];
   }
 
   // Keep names, help texts and field order in sync with cms.ts.
@@ -281,6 +330,7 @@ async function ensureDefinition(definition: CmsDefinition) {
     `✓ Updated  ${definition.name}` +
       (added.length ? ` (added ${added.map((field) => field.key).join(", ")})` : "")
   );
+  return added.map((field) => field.key);
 }
 
 // ---------------------------------------------------------------------------
@@ -310,6 +360,12 @@ const REFERENCE_TYPES: CmsFieldType[] = [
 ];
 
 const defaultFor = (field: CmsField, listKey?: string): string => {
+  // A list entry's parent (e.g. a footer link's column) is resolved to the
+  // parent entry's ID when the entry is created.
+  if (field.type === "metaobject" && field.refType && listKey) {
+    const parent = defaultContentBlocks[listKey]?.parent;
+    return parent ? `ref:${field.refType}/${parent}` : "";
+  }
   if (REFERENCE_TYPES.includes(field.type)) {
     return "";
   }
@@ -499,8 +555,50 @@ async function planLegacy(): Promise<Record<string, Entry[]>> {
 // Entries
 // ---------------------------------------------------------------------------
 
-async function createEntries(definition: CmsDefinition) {
-  if ((await getEntries(definition.type)).length) {
+async function resolveRefs(values: Values): Promise<{ key: string; value: string }[]> {
+  const fields: { key: string; value: string }[] = [];
+  for (const [key, value] of Object.entries(values)) {
+    if (value === "") {
+      continue;
+    }
+    if (value.startsWith("ref:")) {
+      const [type, handle] = value.slice(4).split("/");
+      const data = await admin<{ metaobjectByHandle: { id: string } | null }>(
+        `query ($handle: MetaobjectHandleInput!) { metaobjectByHandle(handle: $handle) { id } }`,
+        { handle: { type, handle } }
+      );
+      if (data.metaobjectByHandle) {
+        fields.push({ key, value: data.metaobjectByHandle.id });
+      }
+      continue;
+    }
+    fields.push({ key, value });
+  }
+  return fields;
+}
+
+async function createEntries(definition: CmsDefinition, addedFields: string[]) {
+  const existing = await getEntries(definition.type);
+  if (existing.length) {
+    // A field added to an existing section gets its starter value, once.
+    const entry = definition.entry && existing.find((item) => item.handle === definition.entry);
+    const planned = definition.entry ? plan.get(definition.type)?.get(definition.entry) : undefined;
+    if (entry && planned && addedFields.length) {
+      const fields = await resolveRefs(
+        Object.fromEntries(addedFields.map((key) => [key, planned[key] ?? ""]))
+      );
+      if (fields.length) {
+        const { metaobjectUpdate } = await admin<{ metaobjectUpdate: UserErrors }>(
+          `mutation ($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+            metaobjectUpdate(id: $id, metaobject: $metaobject) { userErrors { field message } }
+          }`,
+          { id: entry.id, metaobject: { fields } }
+        );
+        check(`Filling new fields of ${definition.name}`, metaobjectUpdate);
+        console.log(`  ${definition.name}: filled the new fields (${fields.map((field) => field.key).join(", ")})`);
+        return;
+      }
+    }
     console.log(`  ${definition.name}: already has entries, left as they are`);
     return;
   }
@@ -514,9 +612,7 @@ async function createEntries(definition: CmsDefinition) {
         metaobject: {
           type: definition.type,
           handle,
-          fields: Object.entries(values)
-            .filter(([, value]) => value !== "")
-            .map(([key, value]) => ({ key, value }))
+          fields: await resolveRefs(values)
         }
       }
     );
@@ -553,6 +649,175 @@ async function removeLegacy(legacy: Record<string, Entry[]>) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Product and collection fields (metafields)
+// ---------------------------------------------------------------------------
+
+async function ensureMetafields() {
+  for (const metafield of cmsMetafields) {
+    const label = `${metafield.ownerType === "PRODUCT" ? "Product" : "Collection"} field “${metafield.name}”`;
+    await optional(label, "write_products", async () => {
+      const existing = await admin<{ metafieldDefinitions: { nodes: { id: string }[] } }>(
+        `query ($ownerType: MetafieldOwnerType!, $key: String!) {
+          metafieldDefinitions(first: 1, ownerType: $ownerType, namespace: "custom", key: $key) {
+            nodes { id }
+          }
+        }`,
+        { ownerType: metafield.ownerType, key: metafield.key }
+      );
+      const validations =
+        metafield.type === "choice"
+          ? [{ name: "choices", value: JSON.stringify(metafield.choices ?? []) }]
+          : metafield.type === "metaobject" && metafield.refType
+            ? [{ name: "metaobject_definition_id", value: (await getDefinition(metafield.refType))!.id }]
+            : [];
+      const type =
+        metafield.type === "metaobject" ? "metaobject_reference" : "single_line_text_field";
+
+      if (existing.metafieldDefinitions.nodes.length) {
+        const { metafieldDefinitionUpdate } = await admin<{ metafieldDefinitionUpdate: UserErrors }>(
+          `mutation ($definition: MetafieldDefinitionUpdateInput!) {
+            metafieldDefinitionUpdate(definition: $definition) { userErrors { field message } }
+          }`,
+          {
+            definition: {
+              ownerType: metafield.ownerType,
+              namespace: "custom",
+              key: metafield.key,
+              name: metafield.name,
+              description: metafield.help,
+              validations,
+              pin: true,
+              access: { storefront: "PUBLIC_READ" }
+            }
+          }
+        );
+        check(label, metafieldDefinitionUpdate);
+        console.log(`✓ Updated  ${label}`);
+        return;
+      }
+      const { metafieldDefinitionCreate } = await admin<{ metafieldDefinitionCreate: UserErrors }>(
+        `mutation ($definition: MetafieldDefinitionInput!) {
+          metafieldDefinitionCreate(definition: $definition) { userErrors { field message } }
+        }`,
+        {
+          definition: {
+            ownerType: metafield.ownerType,
+            namespace: "custom",
+            key: metafield.key,
+            name: metafield.name,
+            description: metafield.help,
+            type,
+            validations,
+            pin: true,
+            access: { storefront: "PUBLIC_READ" }
+          }
+        }
+      );
+      check(label, metafieldDefinitionCreate);
+      console.log(`✓ Created  ${label}`);
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Instant updates: webhooks to /api/revalidate
+// ---------------------------------------------------------------------------
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+
+async function ensureWebhooks() {
+  if (!siteUrl) {
+    console.log("  – skipped instant updates (set NEXT_PUBLIC_SITE_URL in .env.local)");
+    return;
+  }
+  const uri = `${siteUrl}/api/revalidate`;
+  const existing =
+    (await optional("reading webhooks", "read_products", async () => {
+      const data = await admin<{ webhookSubscriptions: { nodes: { topic: string; uri: string; filter: string | null }[] } }>(
+        `{ webhookSubscriptions(first: 100) { nodes { topic uri filter } } }`
+      );
+      return data.webhookSubscriptions.nodes;
+    })) ?? [];
+  const has = (topic: string, filter = "") =>
+    existing.some(
+      (hook) => hook.topic === topic && hook.uri === uri && (hook.filter ?? "") === filter
+    );
+
+  const subscribe = async (topic: string, scope: string, filter = "") => {
+    if (has(topic, filter)) {
+      return true;
+    }
+    const done = await optional(`instant updates for ${topic.toLowerCase()}`, scope, async () => {
+      const { webhookSubscriptionCreate } = await admin<{ webhookSubscriptionCreate: UserErrors }>(
+        `mutation ($topic: WebhookSubscriptionTopic!, $subscription: WebhookSubscriptionInput!) {
+          webhookSubscriptionCreate(topic: $topic, webhookSubscription: $subscription) {
+            userErrors { field message }
+          }
+        }`,
+        { topic, subscription: { uri, format: "JSON", ...(filter ? { filter } : {}) } }
+      );
+      check(`Webhook ${topic}`, webhookSubscriptionCreate);
+      return true;
+    });
+    return Boolean(done);
+  };
+
+  let count = 0;
+  for (const topic of ["PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE", "COLLECTIONS_CREATE", "COLLECTIONS_UPDATE", "COLLECTIONS_DELETE"]) {
+    count += Number(await subscribe(topic, "read_products"));
+  }
+  count += Number(await subscribe("INVENTORY_LEVELS_UPDATE", "read_inventory"));
+  // Metaobject webhooks need a type filter: one subscription per section.
+  for (const definition of cmsDefinitions) {
+    for (const topic of ["METAOBJECTS_CREATE", "METAOBJECTS_UPDATE", "METAOBJECTS_DELETE"]) {
+      count += Number(await subscribe(topic, "read_metaobjects", `type:${definition.type}`));
+    }
+  }
+  console.log(`✓ Instant updates: ${count} webhooks point to ${uri}`);
+}
+
+// ---------------------------------------------------------------------------
+// Link check: buttons and menu links pointing to collections that don't exist
+// ---------------------------------------------------------------------------
+
+async function checkLinks() {
+  const handles = await optional("checking links", "read_products", async () => {
+    const data = await admin<{ collections: { nodes: { handle: string }[] } }>(
+      `{ collections(first: 250) { nodes { handle } } }`
+    );
+    return new Set(data.collections.nodes.map((collection) => collection.handle));
+  });
+  if (!handles) {
+    return;
+  }
+  const problems: string[] = [];
+  for (const definition of cmsDefinitions) {
+    const linkKeys = definition.fields
+      .filter((field) => field.to.endsWith(".ctaLink"))
+      .map((field) => field.key);
+    if (!linkKeys.length) {
+      continue;
+    }
+    for (const entry of await getEntries(definition.type)) {
+      for (const field of entry.fields) {
+        const match = linkKeys.includes(field.key)
+          ? /\/collections\/([^/?#]+)/.exec(field.value ?? "")
+          : null;
+        if (match && match[1] !== "all" && !handles.has(match[1])) {
+          problems.push(`${definition.name} → ${entry.handle} → “${field.value}” (no collection “${match[1]}”)`);
+        }
+      }
+    }
+  }
+  if (problems.length) {
+    console.log("\n⚠ Links to collections that don't exist yet (create the collection or change the link):");
+    problems.forEach((problem) => console.log(`  • ${problem}`));
+  } else {
+    console.log("✓ All button and menu links point to existing collections");
+  }
+}
+
 async function main() {
   if (!domain) {
     throw new Error("Set SHOPIFY_STORE_DOMAIN (your-store.myshopify.com) in .env.local.");
@@ -564,15 +829,27 @@ async function main() {
   planDefaults();
   const legacy = await planLegacy();
 
+  const added = new Map<string, string[]>();
   for (const definition of cmsDefinitions) {
-    await ensureDefinition(definition);
+    added.set(definition.type, await ensureDefinition(definition));
   }
   console.log("");
   for (const definition of cmsDefinitions) {
-    await createEntries(definition);
+    await createEntries(definition, added.get(definition.type) ?? []);
   }
   await removeLegacy(legacy);
 
+  console.log("");
+  await ensureMetafields();
+  await ensureWebhooks();
+  await checkLinks();
+
+  if (missingScopes.size) {
+    console.log(
+      `\nSome steps were skipped. In the Shopify Dev Dashboard, add these permissions to the app,\n` +
+        `release a new version, approve it in the store, and run this again:\n  ${[...missingScopes].join(", ")}`
+    );
+  }
   console.log("\nDone. Edit everything in Shopify admin → Content → Metaobjects.");
 }
 

@@ -2,14 +2,15 @@
 
 import { shop } from "@/lib/shop";
 import { shopifyDomain } from "@/lib/shop/shopify/client";
+import { getAdminToken, isAdminConfigured } from "@/lib/shop/shopify/admin";
 
 export type NewsletterResult = { ok: true } | { ok: false; message: string };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Storefront API cannot subscribe an email without creating a password-protected
-// account, so signups go through the Admin API (needs SHOPIFY_ADMIN_ACCESS_TOKEN
-// with the write_customers scope). Subscribers then appear in Shopify admin →
+// account, so signups go through the Admin API (an app with the write_customers
+// scope, see lib/shop/shopify/admin.ts). Subscribers then appear in Shopify admin →
 // Customers with "Subscribed" email marketing status, ready for Shopify Email.
 export async function subscribeAction(email: string): Promise<NewsletterResult> {
   const address = email.trim().toLowerCase();
@@ -17,17 +18,17 @@ export async function subscribeAction(email: string): Promise<NewsletterResult> 
     return { ok: false, message: "Please enter a valid email address." };
   }
 
-  const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  if (!adminToken) {
+  if (!isAdminConfigured) {
     if (shop.name === "mock") {
       return { ok: true };
     }
-    console.error("[newsletter] SHOPIFY_ADMIN_ACCESS_TOKEN is not set; signup dropped.");
+    console.error("[newsletter] No Admin API credentials set; signup dropped.");
     return { ok: false, message: "Signups are temporarily unavailable." };
   }
 
   const version = process.env.SHOPIFY_API_VERSION || "2026-07";
   try {
+    const adminToken = await getAdminToken();
     const response = await fetch(`https://${shopifyDomain}/admin/api/${version}/graphql.json`, {
       method: "POST",
       cache: "no-store",

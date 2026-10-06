@@ -44,7 +44,8 @@ The website's text and pictures are edited in **Shopify admin → Content → Me
    SHOPIFY_ADMIN_CLIENT_SECRET=...
    # or: SHOPIFY_ADMIN_ACCESS_TOKEN=shpat_...
    ```
-3. Run `npm run shopify:setup`. Safe to run again: it never changes entries that already exist.
+3. Run `npm run shopify:setup`. Safe to run again: it never changes entries that already exist. It also adds the product/collection fields (needs `read_products`, `write_products`), creates webhooks so edits show within seconds (needs `NEXT_PUBLIC_SITE_URL`, plus `read_inventory` for stock), and lists any links to collections that don't exist.
+4. On Vercel, add `SHOPIFY_ADMIN_CLIENT_ID` and `SHOPIFY_ADMIN_CLIENT_SECRET` too: newsletter signups use them, and the webhooks are verified with the client secret.
 
 The sections, their fields and where each field shows on the site are defined in `lib/shop/cms.ts` (the script and the website both read it). Empty fields fall back to the built-in text and photos in `lib/shop/content.ts`.
 
@@ -55,18 +56,18 @@ The sections, their fields and where each field shows on the site are defined in
 | Running message bar at the top | Metaobjects → 📣 **Announcement bar** (add messages; switch scrolling on/off) |
 | WhatsApp button, email, phone, address, hours | Metaobjects → 📞 **Contact & WhatsApp** |
 | Instagram, Facebook, TikTok… links | Metaobjects → 🌐 **Social media links** |
-| Footer text and newsletter title | Metaobjects → 🦶 **Footer** |
-| Footer link columns | Online Store → Navigation → **Footer menu** (top-level item = column title, items under it = links) |
-| Header menu | Online Store → Navigation → **Main menu** (nested items become dropdowns) |
+| Header menu | Metaobjects → 🧭 **Header menu** (one entry per item) and 🧭 **Header menu — dropdown links** (pick the item, type text + link) |
+| Footer link columns | Metaobjects → 🦶 **Footer — columns** and 🦶 **Footer — links** (pick the column, type text + link). Policies with text in Settings → Policies are listed automatically |
+| Footer text, newsletter title, copyright name | Metaobjects → 🦶 **Footer** |
 | Big pictures at the top of the homepage | Metaobjects → 🖼️ **Homepage slider** (one entry per slide) |
 | All other homepage text and pictures | Metaobjects → 🏠 **Homepage** (fields numbered top to bottom) |
 | Shop / Jewelry / About / Lookbook pages | Metaobjects → 🛍️ **Shop page**, 💎 **Jewelry page**, 📖 **About page** + ⭐ **values**, 📸 **Lookbook page** + **chapters** |
 | Size guide on products | Metaobjects → 📏 **Size charts** (one per chart; pick the product types it is for, inches/cm) and 📏 **Size chart — sizes** (pick the chart and the size from dropdowns, type the measurements). Shows on products with a Size option; a chart with no product types is the default |
 | Google title and description | Metaobjects → 🔍 **Google search (SEO)** |
 | Products, prices, sizes/colours, stock | Products (sizes and colours are variants) |
-| Clothing vs Jewelry | Product **type** or a **tag** containing "jewelry"; optional metafield `custom.world` |
-| Collections / categories | Products → Collections; optional metafields `custom.subtitle`, `custom.world` |
-| Contact, FAQ or any other page | Online Store → Pages (`/pages/<handle>`); a page with handle `about` replaces the About story |
+| Size chart for one product, Clothing/Jewelry section, badge | Product page → Metafields: **Size chart**, **Website section**, **Badge on the product picture** |
+| Collections / categories | Products → Collections; Metafields: **Small text above the title**, **Website section** |
+| Contact, FAQ or any other page | Online Store → Pages (`/pages/<handle>`) |
 | Shipping / Returns / Privacy / Terms | Settings → Policies |
 
 ### 5. Instant updates (webhooks)

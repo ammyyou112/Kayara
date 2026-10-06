@@ -11,14 +11,20 @@ import { SHOPIFY_CACHE_TAG } from "@/lib/shop/shopify/client";
 // SHOPIFY_WEBHOOK_SECRET. For a manual refresh: POST /api/revalidate?secret=…
 // with REVALIDATE_SECRET.
 
+// Webhooks made in Settings → Notifications are signed with the key shown
+// there (SHOPIFY_WEBHOOK_SECRET); webhooks created by `npm run shopify:setup`
+// are signed with the app's client secret (SHOPIFY_ADMIN_CLIENT_SECRET).
 const verifyShopifySignature = (body: string, signature: string | null): boolean => {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (!secret || !signature) {
+  if (!signature) {
     return false;
   }
-  const digest = createHmac("sha256", secret).update(body, "utf8").digest();
   const provided = Buffer.from(signature, "base64");
-  return provided.length === digest.length && timingSafeEqual(provided, digest);
+  return [process.env.SHOPIFY_WEBHOOK_SECRET, process.env.SHOPIFY_ADMIN_CLIENT_SECRET]
+    .filter((secret): secret is string => Boolean(secret))
+    .some((secret) => {
+      const digest = createHmac("sha256", secret).update(body, "utf8").digest();
+      return provided.length === digest.length && timingSafeEqual(provided, digest);
+    });
 };
 
 export async function POST(request: NextRequest) {

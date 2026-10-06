@@ -74,6 +74,8 @@ export const sizeChartColumns = [
   { key: "length", label: "Length" }
 ] as const;
 const LINK_HELP = "Where the button goes, e.g. /shop or /collections/bridal";
+const LINK_HELP_PAGES =
+  "Where it goes: /shop · /jewelry · /lookbook · /about · /wishlist · /search · /pages/contact · /collections/<collection> · /products/<product> · or a full https:// link";
 
 type Part = "smallText" | "title" | "text" | "buttonText" | "buttonLink" | "picture" | "pictures";
 
@@ -203,9 +205,88 @@ export const cmsDefinitions: CmsDefinition[] = [
     ]
   },
   {
+    type: "header_menu_item",
+    name: "🧭 Header menu",
+    help: "The menu at the top of every page. One entry = one menu item. To give an item a dropdown, add links to it in “Header menu — dropdown links”.",
+    list: "menu-item",
+    displayField: "title",
+    fields: [
+      { key: "title", name: "Text", type: "text", to: "item.title" },
+      {
+        key: "link",
+        name: "Link",
+        type: "text",
+        to: "item.ctaLink",
+        help: LINK_HELP_PAGES
+      },
+      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 shows first, then 2, 3…" }
+    ]
+  },
+  {
+    type: "header_menu_link",
+    name: "🧭 Header menu — dropdown links",
+    help: "Links that drop down under a header menu item. Pick the menu item, then type the text and the link.",
+    list: "menu-link",
+    displayField: "title",
+    fields: [
+      {
+        key: "menu_item",
+        name: "Under which menu item",
+        type: "metaobject",
+        refType: "header_menu_item",
+        to: "item.parent"
+      },
+      { key: "title", name: "Text", type: "text", to: "item.title" },
+      {
+        key: "link",
+        name: "Link",
+        type: "text",
+        to: "item.ctaLink",
+        help: LINK_HELP_PAGES
+      },
+      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 shows first, then 2, 3…" }
+    ]
+  },
+  {
+    type: "footer_column",
+    name: "🦶 Footer — columns",
+    help: "The link columns in the footer. One entry = one column title. Add its links in “Footer — links”.",
+    list: "footer-column",
+    displayField: "title",
+    fields: [
+      { key: "title", name: "Column title", type: "text", to: "item.title" },
+      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 = left column, then 2, 3…" }
+    ]
+  },
+  {
+    type: "footer_link",
+    name: "🦶 Footer — links",
+    help: "One entry = one link in the footer. Pick its column, then type the text and the link. Your store policies (Settings → Policies) are added to the footer automatically.",
+    list: "footer-link",
+    displayField: "title",
+    fields: [
+      {
+        key: "column",
+        name: "In which column",
+        type: "metaobject",
+        refType: "footer_column",
+        to: "item.parent"
+      },
+      { key: "title", name: "Text", type: "text", to: "item.title" },
+      {
+        key: "link",
+        name: "Link",
+        type: "text",
+        to: "item.ctaLink",
+        help: LINK_HELP_PAGES
+      },
+      { key: "order", name: "Order", type: "number", to: "item.position", help: "1 shows first, then 2, 3…" }
+    ]
+  },
+  {
     type: "footer",
     name: "🦶 Footer (bottom of the website)",
-    help: "The footer link columns are edited in Online Store → Navigation → Footer menu. Contact details and social links come from their own sections.",
+    help: "Footer text. The link columns are in “Footer — columns” and “Footer — links”; contact details and social links come from their own sections.",
     entry: "footer",
     fields: [
       { key: "tagline", name: "Text under the KAYRA logo", type: "longText", to: "settings.tagline" },
@@ -221,6 +302,13 @@ export const cmsDefinitions: CmsDefinition[] = [
         type: "text",
         to: "settings.footerNote",
         help: "e.g. Prices in PKR · Worldwide shipping"
+      },
+      {
+        key: "copyright",
+        name: "Name in the copyright line",
+        type: "text",
+        to: "settings.copyright",
+        help: "Shown as © 2026 KAYRA. All rights reserved."
       }
     ]
   },
@@ -329,7 +417,7 @@ export const cmsDefinitions: CmsDefinition[] = [
   {
     type: "jewelry_page",
     name: "💎 Jewelry page",
-    help: "All the text and pictures on the Jewelry page, from top to bottom.",
+    help: "All the text and pictures on the Jewelry page, from top to bottom. The “Shop by category” tiles and the product list fill themselves from your jewelry collections and products.",
     entry: "jewelry-page",
     fields: [
       ...section("1 · Cover", "cover", "jewelry-cover", ["picture", "smallText", "title"]),
@@ -400,7 +488,7 @@ export const cmsDefinitions: CmsDefinition[] = [
         name: "2 · Our story — Text",
         type: "longText",
         to: "about-story.body",
-        help: "Leave a blank line between paragraphs. (If you make a page called “About” in Online Store → Pages, that page’s text is used instead.)"
+        help: "Leave a blank line between paragraphs."
       },
       ...section("3 · Atelier", "atelier", "about-atelier", [
         "picture",
@@ -522,6 +610,61 @@ export const cmsDefinitions: CmsDefinition[] = [
       { key: "title", name: "Title", type: "text", to: "settings.seoTitle" },
       { key: "description", name: "Description", type: "longText", to: "settings.seoDescription" }
     ]
+  }
+];
+
+/**
+ * Fields added to the Shopify product and collection pages (metafields),
+ * shown in the "Metafields" box when editing a product or collection.
+ */
+export type CmsMetafield = {
+  ownerType: "PRODUCT" | "COLLECTION";
+  key: string;
+  name: string;
+  help: string;
+  type: "text" | "choice" | "metaobject";
+  choices?: string[];
+  refType?: string;
+};
+
+export const cmsMetafields: CmsMetafield[] = [
+  {
+    ownerType: "PRODUCT",
+    key: "size_chart",
+    name: "Size chart",
+    help: "Pick the size chart for this product. Empty = the chart for its product type, or the default chart.",
+    type: "metaobject",
+    refType: "size_chart"
+  },
+  {
+    ownerType: "PRODUCT",
+    key: "world",
+    name: "Website section",
+    help: "Clothing or Jewelry. Empty = decided by the product type/tags (anything mentioning “jewel” is Jewelry).",
+    type: "choice",
+    choices: ["Clothing", "Jewelry"]
+  },
+  {
+    ownerType: "PRODUCT",
+    key: "badge",
+    name: "Badge on the product picture",
+    help: "Optional small label, e.g. New, Bestseller, Limited. “Sold out” and “Sale” show automatically.",
+    type: "text"
+  },
+  {
+    ownerType: "COLLECTION",
+    key: "subtitle",
+    name: "Small text above the title",
+    help: "Optional, e.g. Ceremony 2026.",
+    type: "text"
+  },
+  {
+    ownerType: "COLLECTION",
+    key: "world",
+    name: "Website section",
+    help: "Clothing or Jewelry. Empty = decided by most of its products.",
+    type: "choice",
+    choices: ["Clothing", "Jewelry"]
   }
 ];
 

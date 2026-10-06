@@ -200,6 +200,12 @@ export const mockShopAdapter: ShopAdapter = {
   async getPage(handle) {
     return defaultPages[handle] ?? null;
   },
+  async getPolicies() {
+    return Object.values(defaultPolicies).map((policy) => ({
+      title: policy.title,
+      handle: policy.handle
+    }));
+  },
   async getPolicy(handle) {
     return defaultPolicies[handle] ?? null;
   }

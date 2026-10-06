@@ -31,10 +31,12 @@ export async function ProductView({ world, handle }: { world: World; handle: str
     getBlockList("size-chart"),
     getBlockList("size-row")
   ]);
-  // Shopify → Metaobjects → "Size charts" and "Size chart — sizes". The chart
-  // picked for this product type wins; a chart with no types is the default.
+  // Shopify → Metaobjects → "Size charts" and "Size chart — sizes". Which
+  // chart: the one picked on the product, else the one for its product type,
+  // else the default chart (no product types picked).
   const productType = product.productType?.trim().toLowerCase() ?? "";
   const sizeGuide =
+    sizeCharts.find((chart) => chart.key === product.sizeChart) ??
     sizeCharts.find((chart) => chart.tags?.some((type) => type.toLowerCase() === productType)) ??
     sizeCharts.find((chart) => !chart.tags?.length);
   const sizeOrder = (size: string) => {

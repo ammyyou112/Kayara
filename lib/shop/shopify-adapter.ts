@@ -57,6 +57,8 @@ type RawProduct = {
   collections: Nodes<{ handle: string }>;
   seo: { title: string | null; description: string | null };
   world: RawMetafield;
+  sizeChart: { reference: { handle: string } | null } | null;
+  badge: RawMetafield;
 };
 
 type RawWorldSample = { productType: string; tags: string[]; world: RawMetafield };
@@ -176,6 +178,8 @@ const toProduct = (raw: RawProduct): Product => {
     title: raw.title,
     world: worldOf(raw),
     productType: raw.productType,
+    sizeChart: raw.sizeChart?.reference?.handle,
+    badge: raw.badge?.value?.trim() || undefined,
     collectionHandle:
       raw.collections.nodes.find((collection) => !IGNORED_COLLECTIONS.has(collection.handle))
         ?.handle ?? "",
@@ -707,6 +711,20 @@ export const shopifyAdapter: ShopAdapter = {
           : null;
       },
       null
+    );
+  },
+
+  async getPolicies() {
+    return withFallback<{ title: string; handle: string }[]>(
+      "policies",
+      async () => {
+        type RawPolicy = { handle: string; title: string; body: string } | null;
+        const data = await shopifyFetch<{ shop: Record<string, RawPolicy> }>(Q.policiesQuery);
+        return Object.values(data.shop)
+          .filter((policy): policy is NonNullable<RawPolicy> => Boolean(policy?.body?.trim()))
+          .map((policy) => ({ title: policy.title, handle: policy.handle }));
+      },
+      []
     );
   },
 

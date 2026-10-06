@@ -14,7 +14,7 @@ const publicToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "";
 const privateToken = process.env.SHOPIFY_STOREFRONT_PRIVATE_TOKEN ?? "";
 
 /** Seconds a catalog/content response is cached before Next refetches it. */
-const revalidateSeconds = Number(process.env.SHOPIFY_REVALIDATE_SECONDS ?? 300);
+const revalidateSeconds = Number(process.env.SHOPIFY_REVALIDATE_SECONDS ?? 60);
 
 /** Cache tag the /api/revalidate webhook purges. */
 export const SHOPIFY_CACHE_TAG = "shopify";
